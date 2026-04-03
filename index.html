@@ -1,0 +1,2416 @@
+
+<!-- ══ Firebase SDK ══ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<!-- ══ SheetJS (匯出 Excel) ══ -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<meta name="color-scheme" content="light">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#EEE9E0;--bg2:#E6E0D5;--bg3:#DDD6C8;
+  --surface:#FAF7F2;--border:#DDD6C8;--border2:#C8BFB0;
+  --text:#1A1A1A;--text2:#666460;--text3:#AAA49C;
+  --accent:#C4A882;--accent2:#B49872;--accentfg:#2A1E10;
+  --warn:#8A6420;--wbg:#FBF5E6;
+  --danger:#C0392B;--dbg:#FEF0EE;
+  --ok:#2A6B3A;--obg:#EFF8F2;
+  --r:14px;--rs:10px;
+  --sh:0 2px 12px rgba(0,0,0,.06);
+  color-scheme:light;
+}
+html,body{height:100%;-webkit-font-smoothing:antialiased;background:var(--bg);touch-action:manipulation}
+body{font-family:'Noto Sans TC','Helvetica Neue',-apple-system,sans-serif;font-size:14px;color:var(--text);background:var(--bg);overscroll-behavior:none}
+
+/* ── Shell ── */
+#app{min-height:100dvh;display:flex;flex-direction:column;position:relative}
+
+/* ── Mobile Top Bar ── */
+#top-bar{
+  position:sticky;top:0;z-index:40;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;height:52px;
+}
+#top-logo{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.08em}
+#top-rate{font-size:11px;font-weight:500;color:var(--text2);background:var(--bg2);padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;border:none;font-family:inherit}
+#sb-tog{background:none;border:none;cursor:pointer;padding:6px;color:var(--text2);font-size:20px;line-height:1;display:flex;flex-direction:column;gap:4px;justify-content:center;-webkit-tap-highlight-color:transparent}
+#sb-tog span{display:block;width:20px;height:2px;background:currentColor;border-radius:999px;transition:transform .2s,opacity .2s}
+
+/* ── Sidebar (drawer on mobile, fixed on desktop) ── */
+#sb{
+  position:fixed;top:0;left:0;height:100dvh;
+  width:220px;background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  z-index:50;
+  transform:translateX(-100%);
+  transition:transform .25s cubic-bezier(.25,.8,.25,1);
+  overflow-y:auto;
+}
+#sb.open{transform:translateX(0)}
+/* Overlay behind drawer */
+#sb-overlay{
+  display:none;position:fixed;inset:0;z-index:45;
+  background:rgba(0,0,0,.28);
+}
+#sb-overlay.open{display:block}
+.sb-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 16px 14px;border-bottom:1px solid var(--border);
+}
+.sb-logo{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.06em}
+.sb-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;padding:4px;line-height:1;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center}
+.sb-close:hover{background:var(--bg2);color:var(--text)}
+.sb-tog{display:none}
+.sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.nb{
+  display:flex;align-items:center;width:100%;
+  padding:10px 12px;border:none;border-radius:var(--rs);
+  background:transparent;cursor:pointer;font-size:13px;
+  color:var(--text3);font-family:inherit;text-align:left;
+  transition:background .12s,color .12s;
+}
+.nb:hover{background:var(--bg2);color:var(--text2)}
+.nb.active{background:var(--bg3);color:var(--text);font-weight:600}
+.nb-s{display:none}
+.nb-f{flex:1}
+.sb-bot{padding:14px 16px;border-top:1px solid var(--border);cursor:pointer;transition:background .12s}
+.sb-bot:hover{background:var(--bg)}
+.sb-rl{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.04em;margin-bottom:4px}
+.sb-rv{font-size:13px;font-weight:700;color:var(--text)}
+
+/* ── Main ── */
+#main{flex:1;min-width:0;padding-bottom:20px}
+.content{padding:16px;max-width:640px;margin:0 auto}
+.page{display:none}.page.active{display:block;animation:fadeIn .16s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Page Header ── */
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.pt{font-size:17px;font-weight:700;letter-spacing:-.01em}
+
+/* ── More Page ── */
+#page-more{display:none}
+
+/* ── Buttons ── */
+.btn{
+  padding:9px 16px;border-radius:999px;
+  border:1.5px solid var(--border2);background:var(--surface);
+  cursor:pointer;font-size:12px;font-family:inherit;color:var(--text);
+  font-weight:600;transition:background .1s,transform .08s;
+  -webkit-tap-highlight-color:transparent;letter-spacing:.01em;
+}
+.btn:hover{background:var(--bg2)}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--accent)!important;color:var(--accentfg)!important;border-color:var(--accent)!important}
+.btn-p:hover{background:var(--accent2)!important}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-d{background:var(--dbg)!important;color:var(--danger)!important;border-color:#F5B7B1!important}
+
+/* ── Stat Grid ── */
+.srow{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--surface);padding:16px;border-radius:var(--r);box-shadow:var(--sh)}
+.slbl{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.sval{font-size:17px;font-weight:700;letter-spacing:-.01em}
+
+/* ── Cards ── */
+.card{background:var(--surface);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
+.cf-card{background:var(--surface);padding:16px;margin-bottom:12px;border-radius:var(--r);box-shadow:var(--sh)}
+.ct{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+
+/* ── Tables ── */
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:10px;color:var(--text3);text-align:left;padding:9px 8px;border-bottom:1px solid var(--border);font-weight:600;letter-spacing:.05em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td{font-size:12px;padding:11px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+
+/* ── Pills ── */
+.pill{display:inline-block;font-size:10px;padding:3px 10px;border-radius:999px;font-weight:600;letter-spacing:.03em}
+.ok{background:var(--obg);color:var(--ok)}
+.wn{background:var(--wbg);color:var(--warn)}
+.dd{background:var(--dbg);color:var(--danger)}
+.nn{background:var(--bg3);color:var(--text2)}
+.bl{background:#EBF5FB;color:#1B6A8A}
+.pp{background:#F5EEF8;color:#6C3483}
+
+/* ── Form ── */
+input,select,textarea{
+  font-family:inherit;font-size:16px;/* 16px prevents iOS auto-zoom */
+  border:1.5px solid var(--border);border-radius:var(--rs);
+  padding:10px 13px;background:var(--bg);color:var(--text);
+  width:100%;transition:border-color .15s,box-shadow .15s;
+  -webkit-appearance:none;appearance:none;
+  touch-action:manipulation;
+}
+/* Fix 1: restore checkbox and radio appearance */
+input[type=checkbox],input[type=radio]{
+  -webkit-appearance:auto;appearance:auto;
+  width:auto;padding:0;background:none;border:none;
+  box-shadow:none;font-size:inherit;
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--text2);
+  box-shadow:0 0 0 3px rgba(0,0,0,.06);
+  background:var(--surface);
+}
+input:disabled{opacity:.4;background:var(--bg3)}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.04em}
+.frow{display:grid;gap:10px;margin-bottom:10px}
+.f2{grid-template-columns:1fr 1fr}.f3{grid-template-columns:1fr 1fr 1fr}
+.dv{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+/* ── Date filter ── */
+.df-bar{
+  background:var(--surface);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  box-shadow:var(--sh);
+}
+.df-bar label{font-size:10px;color:var(--text3);white-space:nowrap;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.df-bar input[type=date]{font-size:12px;padding:5px 8px;width:auto;flex:1;min-width:100px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs)}
+.dfp{display:flex;gap:4px;flex-wrap:wrap}
+.dp{padding:5px 12px;border-radius:999px;border:1.5px solid var(--border2);background:var(--bg);cursor:pointer;font-size:11px;color:var(--text2);font-family:inherit;font-weight:500;transition:all .1s}
+.dp:hover{background:var(--bg3)}
+.dp.on{background:var(--accent)!important;color:var(--accentfg)!important;border-color:var(--accent)!important}
+
+/* ── Filter bar ── */
+.fbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.fbar input{max-width:200px;font-size:13px}.fbar select{width:auto;font-size:13px}
+
+/* ── Modals ── */
+.mw{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.35);align-items:flex-end;justify-content:center}
+.mw.open{display:flex}
+.modal{
+  background:var(--surface);border-radius:20px 20px 0 0;
+  padding:8px 20px 36px;width:100%;max-height:93dvh;
+  overflow-y:auto;animation:slideUp .22s ease;
+}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:999px;margin:12px auto 16px}
+@keyframes slideUp{from{transform:translateY(50px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mt{font-size:17px;font-weight:700}
+.mx{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text3);padding:4px;font-family:inherit;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg2)}
+.mf{display:flex;gap:10px;margin-top:18px}
+.mf .btn{flex:1;padding:13px;font-size:13px;text-align:center;border-radius:999px}
+
+/* ── Product Image ── */
+.img-upload{border:1.5px dashed var(--border2);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s;background:var(--bg);border-radius:var(--rs);position:relative}
+.img-upload:hover{border-color:var(--text3)}
+.img-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-upload-label{font-size:12px;color:var(--text3)}
+.img-preview{width:100%;max-height:150px;object-fit:contain;display:block;margin-top:10px;border-radius:var(--rs)}
+.prod-thumb{width:38px;height:38px;object-fit:cover;flex-shrink:0;border-radius:8px;border:1px solid var(--border)}
+
+/* ── Tags ── */
+.tag-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tag{font-size:11px;padding:4px 11px;background:var(--bg2);border-radius:999px;color:var(--text2);display:flex;align-items:center;gap:5px;font-weight:500}
+.tx{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0}
+
+/* ── Order item rows ── */
+.oi{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.oi select,.oi input{flex:1;min-width:60px}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:40px 16px;color:var(--text3);font-size:12px;font-weight:500}
+
+/* ── Info box ── */
+.mbox{background:var(--bg2);border-radius:var(--rs);padding:12px;margin:10px 0;font-size:12px;line-height:1.7}
+
+/* ── Progress bar ── */
+.ibg{background:var(--bg3);border-radius:999px;height:4px;flex:1;overflow:hidden}
+.ib{background:var(--text2);height:4px;border-radius:999px;transition:width .3s ease}
+
+/* ── Radio rows ── */
+.rrow{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.rrow input[type=radio]{width:auto;flex:none;accent-color:var(--text);width:17px;height:17px}
+.rrow label{font-size:13px;color:var(--text);cursor:pointer;flex:none}
+.rext{display:flex;align-items:center;gap:6px;margin-left:4px}
+.rext input{max-width:80px;padding:6px 9px;font-size:13px}
+.rext span{font-size:13px;color:var(--text2);white-space:nowrap}
+
+/* ── QP result ── */
+.qpr{background:var(--bg2);padding:16px;margin-top:14px;border-radius:var(--r)}
+
+/* ── Hist cards ── */
+.hist-card{background:var(--surface);border-radius:var(--r);padding:14px;margin-bottom:10px;position:relative;box-shadow:var(--sh)}
+.hist-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;padding-right:60px}
+.hist-price{font-size:24px;font-weight:700;color:var(--text);margin-bottom:5px;letter-spacing:-.02em}
+.hist-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text3);margin-bottom:5px}
+.hist-del{position:absolute;top:12px;right:12px}
+.hist-section-title{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+
+/* ── Confirm dialog ── */
+#cfm-wrap{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.4);align-items:flex-end;justify-content:center}
+#cfm-wrap.open{display:flex}
+#cfm-box{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;animation:slideUp .2s ease}
+#cfm-msg{font-size:14px;color:var(--text);margin-bottom:20px;line-height:1.65;white-space:pre-line}
+#cfm-btns{display:flex;gap:10px}
+#cfm-btns .btn{flex:1;padding:13px;font-size:13px;text-align:center;border-radius:999px}
+
+/* ── Firebase Sync Status ── */
+#sync-bar{display:flex;align-items:center;gap:7px;padding:10px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);cursor:default;user-select:none}
+#sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .3s}
+#sync-dot.ok{background:var(--ok)}
+#sync-dot.err{background:var(--danger)}
+#sync-dot.ing{background:var(--warn);animation:pulse .9s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+#fb-setup-banner{background:var(--wbg);border:1px solid #F0D080;border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:var(--warn);display:none}
+#fb-setup-banner b{font-weight:700}
+/* ── Export button ── */
+.nb-export{color:var(--ok)!important}
+/* ── Desktop overrides ── */
+@media(min-width:768px){
+  #top-bar{display:none}
+  #sb{transform:none;position:fixed;width:200px;z-index:30}
+  #sb-overlay{display:none!important}
+  #app{flex-direction:row}
+  #main{margin-left:200px}
+  .content{padding:28px 32px;max-width:820px}
+  .mw{align-items:flex-start;padding-top:48px}
+  .modal{border-radius:var(--r);max-width:520px;padding:28px 28px 32px}
+  .modal-handle{display:none}
+  .mf .btn{flex:none;padding:10px 22px}
+  .mf{justify-content:flex-end}
+  #cfm-wrap{align-items:center}
+  #cfm-box{border-radius:var(--r);padding:28px;max-width:380px}
+  #page-more{display:none!important}
+  .srow{grid-template-columns:repeat(4,1fr)}
+  .sb-close{display:none}
+}
+</style>
+
+<!-- 自訂確認框 -->
+<div id="cfm-wrap">
+  <div id="cfm-box">
+    <div id="cfm-msg"></div>
+    <div id="cfm-btns">
+      <button class="btn" id="cfm-no">取消</button>
+      <button class="btn btn-d" id="cfm-yes">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar overlay (mobile) -->
+<div id="sb-overlay" onclick="closeSb()"></div>
+
+<div id="app">
+
+<!-- Mobile Top Bar -->
+<div id="top-bar">
+  <button id="sb-tog" onclick="toggleSb()" aria-label="選單">
+    <span></span><span></span><span></span>
+  </button>
+  <div id="top-logo">代購帳 <span style="font-size:10px;font-weight:400;opacity:.5">v28</span></div>
+  <button id="top-rate" onclick="openRM()">¥-- NT</button>
+</div>
+
+<!-- Sidebar (drawer on mobile, fixed on desktop) -->
+<div id="sb">
+  <div class="sb-head">
+    <span class="sb-logo">代購帳 <span style="font-size:10px;font-weight:400;opacity:.5">v29</span></span>
+    <button class="sb-close" onclick="closeSb()">×</button>
+  </div>
+  <nav class="sb-nav">
+    <button class="nb active" onclick="showPage('dash')"><span class="nb-f">總覽</span></button>
+    <button class="nb" onclick="showPage('inv')"><span class="nb-f">庫存管理</span></button>
+    <button class="nb" onclick="showPage('prod')"><span class="nb-f">商品管理</span></button>
+    <button class="nb" onclick="showPage('po')"><span class="nb-f">預購單</span></button>
+    <button class="nb" onclick="showPage('pu')"><span class="nb-f">進貨紀錄</span></button>
+    <button class="nb" onclick="showPage('sa')"><span class="nb-f">銷售紀錄</span></button>
+    <button class="nb" onclick="showPage('rep')"><span class="nb-f">報表</span></button>
+    <button class="nb" onclick="showPage('qp')"><span class="nb-f">快速訂價</span></button>
+    <button class="nb nb-export" onclick="exportExcel();closeSb()"><span class="nb-f">⬇ 匯出 Excel</span></button>
+  </nav>
+  <div id="sync-bar" title="雲端同步狀態">
+    <span id="sync-dot"></span>
+    <span id="sync-txt">未連線</span>
+  </div>
+  <div class="sb-bot" onclick="openRM()">
+    <div class="sb-rl">目前匯率</div>
+    <div class="sb-rv" id="rate-disp">¥1 = -- NT</div>
+  </div>
+</div>
+
+<div id="main"><div class="content">
+<div id="fb-setup-banner">
+  ⚠️ <b>尚未設定 Firebase</b>：資料目前只存在本機，無法跨裝置同步。請依照說明文件填入你的 Firebase 設定。
+</div>
+
+<div class="page active" id="page-dash">
+  <div class="ph"><div class="pt">總覽</div></div>
+  <div id="df-dash"></div>
+  <div class="srow" id="d-stats"></div>
+  <div class="card"><div class="ct">近期預購單</div><div id="d-po"></div></div>
+</div>
+
+<div class="page" id="page-inv">
+  <div class="ph"><div class="pt">庫存管理</div></div>
+  <div id="df-inv"></div>
+  <div class="cf-card" id="inv-cf"></div>
+  <div class="card" style="padding-bottom:0">
+    <div class="ct" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <span>各商品庫存</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap" id="inv-sort-btns">
+        <button class="btn btn-sm dp" onclick="setInvSort('stock','desc')" id="inv-ss-dd">庫存↓</button>
+        <button class="btn btn-sm dp" onclick="setInvSort('stock','asc')" id="inv-ss-aa">庫存↑</button>
+        <button class="btn btn-sm dp" onclick="setInvSort('price','desc')" id="inv-sp-dd">售價↓</button>
+        <button class="btn btn-sm dp" onclick="setInvSort('price','asc')" id="inv-sp-aa">售價↑</button>
+      </div>
+    </div>
+    <div id="inv-list"></div>
+  </div>
+</div>
+
+<div class="page" id="page-prod">
+  <div class="ph"><div class="pt">商品管理</div><button class="btn btn-p btn-sm" onclick="openPM()">＋ 新增</button></div>
+  <div id="df-prod"></div>
+  <div class="fbar">
+    <input type="text" id="p-s" placeholder="搜尋商品…" oninput="renderProd()">
+    <button class="btn btn-sm dp" onclick="setProdSort('stock','desc')" id="prod-ss-dd">庫存↓</button>
+    <button class="btn btn-sm dp" onclick="setProdSort('stock','asc')" id="prod-ss-aa">庫存↑</button>
+    <button class="btn btn-sm dp" onclick="setProdSort('price','desc')" id="prod-sp-dd">售價↓</button>
+    <button class="btn btn-sm dp" onclick="setProdSort('price','asc')" id="prod-sp-aa">售價↑</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table>
+    <thead><tr><th style="width:8%"></th><th style="width:24%">商品</th><th style="width:16%">進價NT/¥</th><th style="width:16%">售價NT/¥</th><th style="width:14%">規格</th><th style="width:9%">庫存</th><th style="width:5%">門檻</th><th style="width:8%"></th></tr></thead>
+    <tbody id="prod-tb"></tbody>
+  </table></div></div>
+</div>
+
+<div class="page" id="page-po">
+  <div class="ph">
+    <div class="pt">預購單</div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-p btn-sm" onclick="openPoM()">＋ 新增</button>
+      <button class="btn btn-sm" style="background:var(--obg);color:var(--ok);border-color:#A3D9B0" onclick="batchPoToSale()" id="po-batch-sale-btn">批次轉銷貨</button>
+    </div>
+  </div>
+  <div id="df-po"></div>
+  <div class="fbar">
+    <input type="text" id="po-s" placeholder="搜尋客戶…" oninput="renderPo()">
+    <select id="po-f" onchange="renderPo()" style="width:auto;font-size:13px">
+      <option value="">全部狀態</option><option value="pending">待採購</option>
+      <option value="payment">待匯款</option>
+      <option value="purchased">已採購</option><option value="arrived">已到貨</option><option value="shipped">已出貨</option>
+    </select>
+  </div>
+  <div id="po-list"></div>
+</div>
+
+<div class="page" id="page-pu">
+  <div class="ph"><div class="pt">進貨紀錄</div><button class="btn btn-p btn-sm" onclick="openPuM()">＋ 新增</button></div>
+  <div id="df-pu"></div>
+  <div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table>
+    <thead><tr><th style="width:13%">批次</th><th style="width:17%">商品</th><th style="width:9%">規格</th><th style="width:6%">量</th><th style="width:16%">成本NT/¥</th><th style="width:16%">攤運後單價</th><th style="width:9%">日期</th><th style="width:14%"></th></tr></thead>
+    <tbody id="pu-tb"></tbody>
+  </table></div></div>
+</div>
+
+<div class="page" id="page-sa">
+  <div class="ph"><div class="pt">銷售紀錄</div><button class="btn btn-p btn-sm" onclick="openSaM()">＋ 新增</button></div>
+  <div id="df-sa"></div>
+  <div id="sa-list"></div>
+</div>
+
+<div class="page" id="page-rep">
+  <div class="ph"><div class="pt">報表</div></div>
+  <div id="df-rep"></div>
+  <div class="srow" id="rep-stats"></div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:.5rem">趨勢圖</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:.75rem;font-size:11px" id="rep-legend"></div>
+    <div id="rep-chart" style="min-height:200px"></div>
+  </div>
+</div>
+
+<!-- 快速訂價 -->
+<div class="page" id="page-qp">
+  <div class="ph"><div class="pt">快速訂價</div></div>
+  <div class="card">
+    <div class="fg" style="margin-bottom:14px">
+      <div class="fl">品名</div>
+      <input id="qp-pname" placeholder="例：龍貓拼圖 M號、Tama-chan 馬克杯…" oninput="qpCalc()">
+    </div>
+    <div class="dv">輸入金額</div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">幣別</div>
+        <select id="qp-cur" onchange="qpCalc()">
+          <option value="j">日幣（¥）</option>
+          <option value="t">台幣（NT）</option>
+        </select>
+      </div>
+      <div class="fg"><div class="fl">金額</div>
+        <input type="number" id="qp-amt" placeholder="0" oninput="qpCalc()" style="font-size:20px;font-weight:700">
+      </div>
+    </div>
+    <div class="dv">稅金設定</div>
+    <div class="rrow">
+      <input type="radio" name="qp-tax" id="qp-ti" value="inc" checked onchange="qpTax();qpCalc()">
+      <label for="qp-ti">含稅（稅已含在金額中）</label>
+    </div>
+    <div class="rrow">
+      <input type="radio" name="qp-tax" id="qp-te" value="exc" onchange="qpTax();qpCalc()">
+      <label for="qp-te">未含稅，稅率</label>
+      <div class="rext">
+        <input type="number" id="qp-taxr" value="10" oninput="qpCalc()" disabled style="max-width:70px">
+        <span>%（日本消費稅預設10%）</span>
+      </div>
+    </div>
+    <div class="dv">代購費設定</div>
+    <div class="rrow">
+      <input type="radio" name="qp-fee" id="qp-fr" value="rate" checked onchange="qpCalc()">
+      <label for="qp-fr">以特定匯率換算，¥1 = NT</label>
+      <div class="rext"><input type="number" id="qp-rate" value="0.2165" step="0.001" oninput="this.dataset.userEdited='1';qpCalc()" style="max-width:75px"></div>
+    </div>
+    <div class="rrow">
+      <input type="radio" name="qp-fee" id="qp-fp" value="pct" onchange="qpCalc()">
+      <label for="qp-fp">成本加成</label>
+      <div class="rext">
+        <input type="number" id="qp-pct" value="30" oninput="qpCalc()" style="max-width:65px">
+        <span>%</span>
+      </div>
+    </div>
+    <div class="rrow">
+      <input type="radio" name="qp-fee" id="qp-ff" value="fixed" onchange="qpCalc()">
+      <label for="qp-ff">固定代購費 NT</label>
+      <div class="rext"><input type="number" id="qp-fix" value="500" oninput="qpCalc()" style="max-width:85px"></div>
+    </div>
+    <div id="qp-result">
+      <div style="font-size:13px;color:var(--text3);text-align:center;padding:1.5rem;background:var(--bg);border-radius:var(--rs);margin-top:14px">輸入金額後自動試算 ↑</div>
+    </div>
+    <div id="qp-save-area" style="display:none;margin-top:14px">
+      <button class="btn btn-p" style="width:100%;padding:14px;font-size:15px" onclick="qpSave()">＋ 儲存此次試算至歷史紀錄</button>
+    </div>
+  </div>
+  <div id="qp-hist-wrap">
+    <div class="hist-section-title">
+      <span>試算歷史紀錄</span>
+      <span id="qp-hist-count" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+    <div id="qp-hist-list"><div class="empty">尚無試算紀錄，計算後按「儲存」即可新增</div></div>
+  </div>
+  <div style="margin-top:1.5rem">
+    <div class="hist-section-title" style="cursor:pointer;user-select:none" onclick="toggleQpPo()">
+      <span>連線預購單 <span style="font-size:11px;color:var(--text3);font-weight:400">（點擊展開）</span></span>
+      <span id="qp-po-badge" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+    <div id="qp-po-wrap" style="display:none">
+      <div style="font-size:12px;color:var(--text3);background:var(--bg2);border-radius:var(--rs);padding:8px 12px;margin-bottom:12px">
+        直接從歷史試算開單，或手動新增。此區塊僅在快速訂價頁顯示，不影響主選單的「預購單」頁。
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="btn btn-p btn-sm" onclick="openQpPoM()">＋ 手動新增連線預購單</button>
+      </div>
+      <div id="qp-po-list"><div class="empty">尚無預購單</div></div>
+    </div>
+  </div>
+</div>
+
+</div></div>
+
+</div>
+
+<!-- 匯率 modal -->
+<div class="mw" id="m-rate">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mh"><div class="mt">設定匯率</div><button class="mx" onclick="cm('m-rate')">×</button></div>
+    <div class="fg" style="margin-bottom:14px"><div class="fl">1 日圓（¥）= 幾台幣（NT）</div>
+      <input type="number" id="rate-inp" step="0.0001" placeholder="例：0.2165" style="font-size:20px;font-weight:700">
+    </div>
+    <div class="mf"><button class="btn" onclick="cm('m-rate')">取消</button><button class="btn btn-p" onclick="saveRate()">儲存</button></div>
+  </div>
+</div>
+
+<!-- 商品 modal -->
+<div class="mw" id="m-prod">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mh"><div class="mt" id="mp-t">新增商品</div><button class="mx" onclick="cm('m-prod')">×</button></div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">商品名稱</div><input id="mp-name" placeholder="牛頭犬收納盒"></div>
+      <div class="fg"><div class="fl">日文品名</div><input id="mp-jp" placeholder="ブルドッグ収納箱"></div>
+    </div>
+    <div class="dv">進價</div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">進價（NT）主要</div><input type="number" id="mp-ctw" placeholder="0" oninput="sf('mp-ctw','mp-cjp')"></div>
+      <div class="fg"><div class="fl">進價（¥）</div><input type="number" id="mp-cjp" placeholder="0" oninput="sf('mp-cjp','mp-ctw')"></div>
+    </div>
+    <div class="dv">售價</div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">售價（NT）主要</div><input type="number" id="mp-ptw" placeholder="0" oninput="sf('mp-ptw','mp-pjp')"></div>
+      <div class="fg"><div class="fl">售價（¥）</div><input type="number" id="mp-pjp" placeholder="0" oninput="sf('mp-pjp','mp-ptw')"></div>
+    </div>
+    <div class="frow f2" style="margin-top:8px">
+      <div class="fg"><div class="fl">庫存</div><input type="number" id="mp-stock" value="0"></div>
+      <div class="fg"><div class="fl">低庫存門檻</div><input type="number" id="mp-min" value="2"></div>
+    </div>
+    <div class="fg" style="margin-bottom:8px">
+      <div class="fl">規格（Enter 新增）</div>
+      <input id="mp-vi" placeholder="紅色、L號..." onkeydown="addVar(event)">
+      <div class="tag-list" id="mp-vt"></div>
+    </div>
+    <div class="fg" style="margin-bottom:8px"><div class="fl">備註</div><textarea id="mp-note" rows="2"></textarea></div>
+    <div class="fg" style="margin-bottom:8px">
+      <div class="fl">商品圖片</div>
+      <div class="img-upload" id="mp-img-wrap" onclick="document.getElementById('mp-img-file').click()">
+        <input type="file" id="mp-img-file" accept="image/*" style="display:none" onchange="handleProdImg(event)">
+        <img id="mp-img-preview" class="img-preview" style="display:none">
+        <div class="img-upload-label" id="mp-img-label">點此上傳圖片（JPG、PNG、WEBP）</div>
+        <button type="button" id="mp-img-clear" onclick="clearProdImg(event)" style="display:none;margin-top:8px;font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer;font-family:inherit;letter-spacing:.02em">移除圖片</button>
+      </div>
+    </div>
+    <div class="mf"><button class="btn" onclick="cm('m-prod')">取消</button><button class="btn btn-p" onclick="saveProd()">儲存</button></div>
+  </div>
+</div>
+
+<!-- 預購單 modal -->
+<div class="mw" id="m-po">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mh"><div class="mt">新增預購單</div><button class="mx" onclick="cm('m-po')">×</button></div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">客戶姓名</div><input id="po-name" placeholder="姓名"></div>
+      <div class="fg"><div class="fl">電話</div><input id="po-phone" placeholder="電話"></div>
+    </div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">訂購管道</div>
+        <select id="po-channel" onchange="toggleChannelOther()">
+          <option value="IG">IG</option>
+          <option value="Threads">Threads</option>
+          <option value="Line">Line</option>
+          <option value="FB">FB</option>
+          <option value="other">其他（自填）</option>
+        </select>
+      </div>
+      <div class="fg"><div class="fl">訂購者 ID／帳號</div><input id="po-cid" placeholder="@帳號 或 暱稱"></div>
+    </div>
+    <div class="fg" id="po-channel-other-wrap" style="display:none;margin-bottom:8px">
+      <div class="fl">其他管道說明</div><input id="po-channel-other" placeholder="請輸入訂購管道">
+    </div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">取件方式</div>
+        <select id="po-pickup" onchange="toggleStore()">
+          <option value="self">自取</option><option value="store">店到店</option><option value="delivery">宅配</option>
+        </select>
+      </div>
+      <div class="fg" id="po-sg" style="display:none"><div class="fl">寄送門市</div><input id="po-store" placeholder="全家 台北信義門市"></div>
+    </div>
+    <div class="fg" id="po-addr-wrap" style="display:none;margin-bottom:8px"><div class="fl">收件地址</div><input id="po-address" placeholder="請輸入收件地址"></div>
+    <div class="fg" id="po-freight-wrap" style="display:none;margin-bottom:8px"><div class="fl">運費（NT）</div><input type="number" id="po-freight" placeholder="0" oninput="poCalcTotal()"></div>
+    <div class="dv">預購商品</div>
+    <div id="po-items"></div>
+    <button class="btn btn-sm" onclick="addOI()" style="margin-top:4px">+ 品項</button>
+    <div id="po-total-bar" style="display:none;background:var(--bg2);border-radius:var(--rs);padding:8px 10px;margin-top:8px;font-size:12px;color:var(--text2)"></div>
+    <div class="dv">金額</div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">訂金（NT）</div><input type="number" id="po-dt" placeholder="0" oninput="sf('po-dt','po-dj')"></div>
+      <div class="fg"><div class="fl">訂金（¥）</div><input type="number" id="po-dj" placeholder="0" oninput="sf('po-dj','po-dt')"></div>
+    </div>
+    <div class="fg" style="margin-top:10px"><div class="fl">備註</div><textarea id="po-note" rows="2"></textarea></div>
+    <div class="mf"><button class="btn" onclick="S.eqpoid=null;_qpPoEdit=null;document.getElementById('m-po').dataset.mode='';document.querySelector('#m-po .mt').textContent='新增預購單';document.querySelector('#m-po .mf .btn-p').textContent='建立';cm('m-po')">取消</button><button class="btn btn-p" onclick="savePo()">建立</button></div>
+  </div>
+</div>
+
+<!-- 進貨 modal -->
+<div class="mw" id="m-pu">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mh"><div class="mt">新增進貨批次</div><button class="mx" onclick="cm('m-pu')">×</button></div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">批次名稱</div><input id="pu-batch" placeholder="2025Q2"></div>
+      <div class="fg"><div class="fl">到貨日期</div><input type="date" id="pu-date"></div>
+    </div>
+    <div class="dv">批次運費（平均攤提至每件）</div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">運費（NT）主要</div><input type="number" id="pu-st" placeholder="0" oninput="sf('pu-st','pu-sj');puHint()"></div>
+      <div class="fg"><div class="fl">運費（¥）</div><input type="number" id="pu-sj" placeholder="0" oninput="sf('pu-sj','pu-st');puHint()"></div>
+    </div>
+    <div class="dv">品項</div>
+    <div id="pu-items"></div>
+    <button class="btn btn-sm" onclick="addPuI()" style="margin-top:4px">+ 品項</button>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px;background:var(--bg2);padding:6px 8px;border-radius:var(--rs);min-height:22px" id="pu-hint"></div>
+    <div class="fg" style="margin-top:10px"><div class="fl">備註</div><input id="pu-note" placeholder="備註"></div>
+    <div class="mf"><button class="btn" onclick="cm('m-pu')">取消</button><button class="btn btn-p" onclick="savePu()">儲存並入庫</button></div>
+  </div>
+</div>
+
+<!-- 銷售 modal -->
+<div class="mw" id="m-sa">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mh"><div class="mt" id="sa-modal-title">新增銷售紀錄</div><button class="mx" onclick="cm('m-sa')">×</button></div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">客戶姓名 <span style="color:var(--text3);font-size:10px">（選填）</span></div><input id="s-cust" placeholder="姓名"></div>
+      <div class="fg"><div class="fl">電話</div><input id="s-phone" placeholder="電話"></div>
+    </div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">訂購管道</div>
+        <select id="s-channel" onchange="toggleSaChannelOther()">
+          <option value="IG">IG</option><option value="Threads">Threads</option>
+          <option value="Line">Line</option><option value="FB">FB</option>
+          <option value="other">其他（自填）</option>
+        </select>
+      </div>
+      <div class="fg"><div class="fl">訂購者 ID／帳號</div><input id="s-cid" placeholder="@帳號 或 暱稱"></div>
+    </div>
+    <div class="fg" id="s-channel-other-wrap" style="display:none;margin-bottom:8px">
+      <div class="fl">其他管道說明</div><input id="s-channel-other" placeholder="請輸入訂購管道">
+    </div>
+    <div class="frow f2">
+      <div class="fg"><div class="fl">取件方式</div>
+        <select id="s-pickup" onchange="toggleSaPickup()">
+          <option value="self">自取</option><option value="store">店到店</option><option value="delivery">宅配</option>
+        </select>
+      </div>
+      <div class="fg" id="s-sg" style="display:none"><div class="fl">寄送門市</div><input id="s-store" placeholder="全家 台北信義門市"></div>
+    </div>
+    <div class="fg" id="s-addr-wrap" style="display:none;margin-bottom:8px"><div class="fl">收件地址</div><input id="s-address" placeholder="請輸入收件地址"></div>
+    <div class="fg" id="s-freight-wrap" style="display:none;margin-bottom:8px"><div class="fl">運費（NT）</div><input type="number" id="s-freight" placeholder="0" oninput="sCalc()"></div>
+    <div class="fg" style="margin-bottom:8px"><div class="fl">日期</div><input type="date" id="s-date"></div>
+    <div class="dv">銷售商品（可多筆）</div>
+    <div id="sa-items"></div>
+    <button class="btn btn-sm" onclick="addSaI()" style="margin-top:4px">+ 品項</button>
+    <div class="mbox" id="s-prev" style="margin-top:8px">輸入售價與成本後自動顯示毛利</div>
+    <div class="fg" style="margin-top:8px"><div class="fl">備註</div><input id="s-note" placeholder="備註"></div>
+    <div class="mf"><button class="btn" onclick="closeSaM()">取消</button><button class="btn btn-p" onclick="saveSa()">儲存</button></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ── 自訂確認框（取代 confirm()，避免 iframe 封鎖）── */
+let _cfmCb=null;
+function cfm(msg,cb,yesLabel,yesClass){
+  document.getElementById('cfm-msg').textContent=msg;
+  const yBtn=document.getElementById('cfm-yes');
+  yBtn.textContent=yesLabel||'確定';
+  yBtn.className='btn '+(yesClass||'btn-d');
+  _cfmCb=cb;
+  document.getElementById('cfm-wrap').classList.add('open');
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('cfm-yes').onclick=()=>{document.getElementById('cfm-wrap').classList.remove('open');if(_cfmCb)_cfmCb();_cfmCb=null;};
+  document.getElementById('cfm-no').onclick=()=>{document.getElementById('cfm-wrap').classList.remove('open');_cfmCb=null;};
+});
+let S={
+  rate:0.2165,
+  products:[
+    {id:1,name:'牛頭犬收納盒',jp:'ブルドッグ収納箱',cjp:2200,ctw:476,pjp:3200,ptw:693,stock:5,min:2,vars:['紅色','藍色'],note:'',date:'2025-01-10'},
+    {id:2,name:'富士山馬克杯',jp:'富士山マグカップ',cjp:1500,ctw:325,pjp:2200,ptw:476,stock:2,min:2,vars:[],note:'',date:'2025-02-05'},
+    {id:3,name:'龍貓立體拼圖',jp:'トトロ立体パズル',cjp:4800,ctw:1039,pjp:7200,ptw:1559,stock:0,min:1,vars:['S號','M號','L號'],note:'限量版',date:'2025-02-20'},
+  ],
+  preorders:[
+    {id:1,oid:'PO-001',name:'林小美',phone:'0912-111-222',pickup:'store',store:'全家信義店',dj:0,dt:500,items:[{pid:3,v:'M號',qty:1,pt:1980,pj:0}],status:'pending',note:'',date:'2025-03-10'},
+    {id:2,oid:'PO-002',name:'陳大明',phone:'0923-444-555',pickup:'self',store:'',dj:0,dt:1000,items:[{pid:3,v:'L號',qty:2,pt:1980,pj:0},{pid:1,v:'紅色',qty:1,pt:980,pj:0}],status:'arrived',note:'',date:'2025-03-15'},
+  ],
+  purchases:[
+    {id:1,batch:'2025Q1',date:'2025-02-20',sj:3000,st:649,items:[{pid:1,v:'紅色',qty:3,cjp:6600,alloc:375},{pid:2,v:'',qty:5,cjp:7500,alloc:375}],note:''},
+  ],
+  sales:[
+    {id:1,sid:'S-001',cust:'王小華',pid:2,v:'',qty:2,pt:1240,pj:0,ct:648,cj:0,ship:60,dep:0,bal:632,poid:null,date:'2025-03-05'},
+    {id:2,sid:'S-002',cust:'張雅婷',pid:1,v:'藍色',qty:1,pt:980,pj:0,ct:476,cj:0,ship:0,dep:300,bal:680,poid:null,date:'2025-03-18'},
+  ],
+  qpHistory:[],
+  qpOrders:[],   // 連線預購單獨立資料庫，與主預購單(preorders)完全分開
+  nPid:4,nPoid:3,nPuid:2,nSid:3,nQpoid:1,
+  epid:null,eqpoid:null,tvars:[],puI:[],poI:[],df:{}
+};
+// ══════════════════════════════════════════════════
+// ██  FIREBASE 設定區  ██
+// 請將下方 YOUR_XXX 換成你的 Firebase 專案設定值
+// 設定值在 Firebase Console → 專案設定 → 你的應用程式
+// ══════════════════════════════════════════════════
+const FB_CONFIG = {
+  apiKey: "AIzaSyCz-KRV4yoP3AF8OPdTPhT51JTycoPhNIQ",
+  authDomain: "jiji-ce3da.firebaseapp.com",
+  projectId: "jiji-ce3da",
+  storageBucket: "jiji-ce3da.firebasestorage.app",
+  messagingSenderId: "70164612730",
+  appId: "1:70164612730:web:6bfab4d10acf6517669dc3",
+  measurementId: "G-VJJ6K3LCPG"
+};
+const FB_DOC_PATH = "proxy/main"; // Firestore 文件路徑（不用改）
+// ══════════════════════════════════════════════════
+
+let _db = null;        // Firestore instance
+let _unsubscribe = null; // 即時監聽取消函式
+let _fbReady = false;  // Firebase 是否初始化成功
+let _saveTimer = null; // 防抖 timer
+
+function _syncDot(state, txt) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-txt');
+  if (dot) { dot.className = ''; dot.classList.add(state); }
+  if (label) label.textContent = txt;
+}
+
+function _isFbConfigured() {
+  return FB_CONFIG.apiKey && FB_CONFIG.apiKey !== 'YOUR_API_KEY';
+}
+
+// ── Firebase 初始化 ──────────────────────────────
+function initFirebase() {
+  if (!_isFbConfigured()) {
+    document.getElementById('fb-setup-banner').style.display = 'block';
+    _syncDot('err', '未設定 Firebase');
+    return;
+  }
+  try {
+    firebase.initializeApp(FB_CONFIG);
+    _db = firebase.firestore();
+    _fbReady = true;
+    _syncDot('ing', '連線中…');
+    // 開啟即時監聽：任何裝置存檔，本機即時更新
+    _unsubscribe = _db.doc(FB_DOC_PATH).onSnapshot(snap => {
+      if (snap.exists) {
+        const remote = snap.data();
+        // 合併遠端資料（保留暫態欄位）
+        S = { ...S, ...remote, df: {}, tvars: [], puI: [], poI: [] };
+        if (!S.qpHistory) S.qpHistory = [];
+        if (!S.qpOrders) S.qpOrders = [];
+        if (!S.nQpoid) S.nQpoid = 1;
+        // 更新所有畫面
+        updateRate();
+        const active = document.querySelector('.page.active');
+        if (active) renderByPg(active.id.replace('page-', ''));
+        renderQpHist(); renderQpPoList();
+      }
+      _syncDot('ok', '已同步');
+    }, err => {
+      console.error('Firestore 監聽錯誤', err);
+      _syncDot('err', '同步失敗');
+    });
+  } catch(e) {
+    console.error('Firebase 初始化失敗', e);
+    _syncDot('err', '初始化失敗');
+  }
+}
+
+// ── 存檔（防抖 800ms，避免每次按鍵都寫入）──────
+function sv() {
+  // 永遠先存 localStorage（離線備份）
+  try { localStorage.setItem('jp6', JSON.stringify(S)); } catch(e) {}
+  // 總覽頁即時刷新
+  const dashPage = document.getElementById('page-dash');
+  if (dashPage && dashPage.classList.contains('active')) renderDash();
+  // Firebase 寫入（防抖）
+  if (!_fbReady) return;
+  clearTimeout(_saveTimer);
+  _syncDot('ing', '儲存中…');
+  _saveTimer = setTimeout(async () => {
+    try {
+      // 清除無法序列化的暫態欄位
+      const payload = { ...S };
+      delete payload.df; delete payload.tvars;
+      delete payload.puI; delete payload.poI;
+      delete payload.epid; delete payload.eqpoid;
+      delete payload._puEditId;
+      await _db.doc(FB_DOC_PATH).set(payload);
+      _syncDot('ok', '已同步');
+    } catch(e) {
+      console.error('Firestore 寫入失敗', e);
+      _syncDot('err', '儲存失敗');
+    }
+  }, 800);
+}
+
+// ── 讀取（啟動時先讀 localStorage，Firebase 監聽覆蓋）
+function ld() {
+  try {
+    const d = localStorage.getItem('jp6');
+    if (d) {
+      const p = JSON.parse(d);
+      S = { ...S, ...p, df: {}, tvars: [], puI: [], poI: [] };
+      if (!S.qpHistory) S.qpHistory = [];
+      if (!S.qpOrders) S.qpOrders = [];
+      if (!S.nQpoid) S.nQpoid = 1;
+    }
+  } catch(e) {}
+}
+ld();
+
+
+const gp=id=>S.products.find(p=>p.id===id);
+const j2t=v=>Math.round(v*S.rate);
+const t2j=v=>S.rate>0?Math.round(v/S.rate):0;
+const ntd=v=>'NT\u00a0'+Math.round(v).toLocaleString();
+const jpy=v=>'¥'+Math.round(v).toLocaleString();
+const td=()=>new Date().toISOString().split('T')[0];
+const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().split('T')[0];};
+const mst=()=>{const d=new Date();d.setDate(1);return d.toISOString().split('T')[0];};
+const yst=()=>new Date().getFullYear()+'-01-01';
+const now=()=>{const d=new Date();return d.toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'})+' '+d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});};
+
+// 排序狀態
+let _invSort={field:'',dir:''};
+let _prodSort={field:'',dir:''};
+
+function setInvSort(field,dir){
+  _invSort={field,dir};
+  ['inv-ss-dd','inv-ss-aa','inv-sp-dd','inv-sp-aa'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});
+  const map={stock_desc:'inv-ss-dd',stock_asc:'inv-ss-aa',price_desc:'inv-sp-dd',price_asc:'inv-sp-aa'};
+  const k=map[field+'_'+dir];if(k){const el=document.getElementById(k);if(el)el.classList.add('on');}
+  renderInv();
+}
+function setProdSort(field,dir){
+  _prodSort={field,dir};
+  ['prod-ss-dd','prod-ss-aa','prod-sp-dd','prod-sp-aa'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});
+  const map={stock_desc:'prod-ss-dd',stock_asc:'prod-ss-aa',price_desc:'prod-sp-dd',price_asc:'prod-sp-aa'};
+  const k=map[field+'_'+dir];if(k){const el=document.getElementById(k);if(el)el.classList.add('on');}
+  renderProd();
+}
+function sortProds(list){
+  if(!_invSort.field&&!_prodSort.field)return list;
+  const s=_invSort.field?_invSort:_prodSort;
+  return [...list].sort((a,b)=>{
+    const av=s.field==='stock'?a.stock:(a.ptw||j2t(a.pjp));
+    const bv=s.field==='stock'?b.stock:(b.ptw||j2t(b.pjp));
+    return s.dir==='asc'?av-bv:bv-av;
+  });
+};
+
+function sf(from,to){
+  const v=parseFloat(document.getElementById(from)?.value)||0;
+  const e=document.getElementById(to);if(!e)return;
+  const isJ=from.endsWith('jp')||from.endsWith('j');
+  const r=isJ?j2t(v):t2j(v);if(r)e.value=r;else e.value='';
+}
+function om(id){document.getElementById(id).classList.add('open');}
+function cm(id){document.getElementById(id).classList.remove('open');}
+function toggleSb(){
+  const sb=document.getElementById('sb');
+  const ov=document.getElementById('sb-overlay');
+  sb.classList.toggle('open');
+  if(ov)ov.classList.toggle('open');
+}
+function closeSb(){
+  document.getElementById('sb')?.classList.remove('open');
+  document.getElementById('sb-overlay')?.classList.remove('open');
+}
+function openRM(){document.getElementById('rate-inp').value=S.rate;om('m-rate');}
+function saveRate(){const v=parseFloat(document.getElementById('rate-inp').value);if(!v||v<=0){alert('請輸入正確匯率');return;}S.rate=v;sv();updateRate();cm('m-rate');}
+function updateRate(){
+  const rd=document.getElementById('rate-disp');if(rd)rd.textContent='¥1 = '+S.rate.toFixed(4)+' NT';
+  const t=document.getElementById('top-rate');if(t)t.textContent='¥'+S.rate.toFixed(4)+' NT';
+  // [FIX 10] 匯率更新時同步更新快速訂價的預設換算匯率欄位
+  const qr=document.getElementById('qp-rate');if(qr&&!qr.dataset.userEdited)qr.value=S.rate.toFixed(4);
+}
+
+const PGS=['dash','inv','prod','po','pu','sa','rep','qp'];
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  const pg=document.getElementById('page-'+n);if(pg)pg.classList.add('active');
+  document.querySelectorAll('.nb')[PGS.indexOf(n)]?.classList.add('active');
+  // close drawer on mobile after navigation
+  closeSb();
+  if(!S.df[n])S.df[n]={from:'',to:''};
+  makeDf(n);
+  ({dash:renderDash,inv:renderInv,prod:renderProd,po:renderPo,pu:renderPu,sa:renderSa,rep:renderRep,qp:()=>{renderQpHist();renderQpPoList();}})[n]?.();
+}
+function inRange(date,pg){
+  const df=S.df[pg]||{};
+  if(!df.from&&!df.to)return true;
+  if(df.from&&date<df.from)return false;
+  if(df.to&&date>df.to)return false;
+  return true;
+}
+const PS=[{l:'今天',f:td,t:td},{l:'7天',f:()=>ago(7),t:td},{l:'本月',f:mst,t:td},{l:'今年',f:yst,t:td},{l:'全部',f:()=>'',t:()=>''}];
+function isAct(df,p){return df.from===p.f()&&df.to===p.t();}
+function makeDf(pg){
+  const el=document.getElementById('df-'+pg);if(!el)return;
+  const df=S.df[pg]||{from:'',to:''};
+  el.innerHTML=`<div class="df-bar"><label>期間</label>
+    <input type="date" value="${df.from||''}" onchange="setDf('${pg}','from',this.value)" style="max-width:128px">
+    <span style="font-size:11px;color:var(--text3)">—</span>
+    <input type="date" value="${df.to||''}" onchange="setDf('${pg}','to',this.value)" style="max-width:128px">
+    <div class="dfp">${PS.map(p=>`<button class="dp${isAct(df,p)?' on':''}" onclick="applyP('${pg}','${p.f()}','${p.t()}')">${p.l}</button>`).join('')}</div>
+  </div>`;
+}
+function setDf(pg,field,val){if(!S.df[pg])S.df[pg]={from:'',to:''};S.df[pg][field]=val;makeDf(pg);renderByPg(pg);}
+function applyP(pg,from,to){S.df[pg]={from,to};makeDf(pg);renderByPg(pg);}
+function renderByPg(pg){({dash:renderDash,inv:renderInv,prod:renderProd,po:renderPo,pu:renderPu,sa:renderSa,rep:renderRep,qp:()=>{renderQpHist();renderQpPoList();}})[pg]?.();}
+
+function renderDash(){
+  const fPo=S.preorders.filter(o=>inRange(o.date,'dash'));
+  const fSa=S.sales.filter(s=>inRange(s.date,'dash'));
+  const itemRev=fSa.reduce((a,s)=>a+s.pt*s.qty,0);
+  const freightRev=fSa.reduce((a,s)=>a+(s.freight||s.ship||0),0);
+  const rev=itemRev+freightRev;
+  const profit=fSa.reduce((a,s)=>a+(s.pt*s.qty-s.ct*s.qty),0);
+  // [FIX 1] 毛利率基準統一為商品售價（不含運費），與報表頁一致
+  const margin=itemRev>0?(profit/itemRev*100):0;
+  const ts=S.products.reduce((a,p)=>a+p.stock,0);
+  const pc=profit>=0?'var(--ok)':'var(--danger)';
+  document.getElementById('d-stats').innerHTML=`
+    <div class="stat"><div class="slbl">商品種類</div><div class="sval">${S.products.length}</div></div>
+    <div class="stat"><div class="slbl">總庫存件數</div><div class="sval">${ts}</div></div>
+    <div class="stat"><div class="slbl">期間銷售額</div><div class="sval" style="font-size:14px">${ntd(rev)}</div></div>
+    <div class="stat"><div class="slbl">期間毛利</div><div class="sval" style="font-size:14px;color:${pc}">${ntd(profit)}<div style="font-size:11px;font-weight:400;color:${pc};margin-top:2px">${margin.toFixed(1)}%</div></div></div>`;
+  const stL={pending:'待採購',payment:'待匯款',purchased:'已採購',arrived:'已到貨',shipped:'已出貨'};
+  const stC={pending:'wn',payment:'dd',purchased:'bl',arrived:'pp',shipped:'ok'};
+  const pd=fPo.filter(o=>o.status!=='shipped');
+  // [FIX 9] 補上宅配 (delivery) 的顯示判斷，原本只有 store/自取
+  document.getElementById('d-po').innerHTML=pd.length?pd.map(o=>{
+    const pickupLabel=o.pickup==='store'?'店到店 '+o.store:o.pickup==='delivery'?'宅配 '+(o.address||''):' 自取';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
+    <div><div style="font-size:13px;font-weight:500">${o.oid} · ${o.name}</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:2px">${o.phone||''} · ${pickupLabel} · ${o.date}</div></div>
+    <span class="pill ${stC[o.status]}">${stL[o.status]}</span>
+  </div>`;}).join(''):'<div class="empty">此期間無待處理預購單</div>';
+}
+// 從進貨紀錄 - 銷售紀錄，計算各規格庫存
+function getVarStock(pid){
+  const vs={};
+  S.purchases.forEach(pu=>pu.items.forEach(item=>{
+    if(parseInt(item.pid)===pid){const k=item.v||'';vs[k]=(vs[k]||0)+(parseInt(item.qty)||0);}
+  }));
+  S.sales.forEach(s=>{
+    if(parseInt(s.pid)===pid){const k=s.v||'';vs[k]=(vs[k]||0)-(parseInt(s.qty)||0);}
+  });
+  return vs;
+}
+function renderInv(){
+  const fPu=S.purchases.filter(p=>inRange(p.date,'inv'));
+  const prods=S.products;
+  // 使用加權平均攤運後成本計算壓貨成本
+  const totalCost=prods.reduce((a,p)=>a+p.stock*getWeightedAvgCost(p.id),0);
+  const totalSell=prods.reduce((a,p)=>a+p.stock*(p.ptw||j2t(p.pjp)),0);
+  const ts=prods.reduce((a,p)=>a+p.stock,0);
+  const inflow=fPu.reduce((a,b)=>a+b.items.reduce((c,i)=>c+i.qty,0),0);
+  document.getElementById('inv-cf').innerHTML=`
+    <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">庫存現金流試算（目前實際庫存，成本含進貨運費攤提）</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:.75rem">
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">壓貨成本</div>
+        <div style="font-size:20px;font-weight:500">${ntd(totalCost)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${jpy(prods.reduce((a,p)=>a+p.stock*p.cjp,0))}</div></div>
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">預估售出回收</div>
+        <div style="font-size:20px;font-weight:500">${ntd(totalSell)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${jpy(prods.reduce((a,p)=>a+p.stock*p.pjp,0))}</div></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:.75rem;display:flex;gap:20px;flex-wrap:wrap">
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px">潛在毛利</div>
+        <div style="font-size:16px;font-weight:500;color:${totalSell-totalCost>=0?'var(--ok)':'var(--danger)'}">${ntd(totalSell-totalCost)}</div></div>
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px">總庫存件數</div><div style="font-size:16px;font-weight:500">${ts} 件</div></div>
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:2px">期間入庫</div><div style="font-size:16px;font-weight:500">${inflow} 件</div></div>
+    </div>`;
+  const maxS=Math.max(...prods.map(p=>p.stock),1);
+  const el=document.getElementById('inv-list');
+  if(!prods.length){el.innerHTML='<div class="empty">尚無商品</div>';return;}
+  const sorted=_invSort.field?sortProds(prods):prods;
+  el.innerHTML=sorted.map(p=>{
+    // 使用加權平均攤運後成本
+    const cNT=getWeightedAvgCost(p.id);
+    const pNT=p.ptw||j2t(p.pjp);
+    const pct=Math.round(p.stock/maxS*100);
+    const sp=p.stock===0?'dd':p.stock<=p.min?'wn':'ok';
+    const sl=p.stock===0?'缺貨':p.stock<=p.min?'低庫存':'正常';
+    // 規格庫存
+    let varStockHtml='';
+    if(p.vars&&p.vars.length>0){
+      const vs=getVarStock(p.id);
+      // [FIX 5] 若該商品完全沒有進貨記錄，規格庫存無法從進貨計算，顯示提示
+      const hasPurchaseRecord=S.purchases.some(pu=>pu.items.some(i=>parseInt(i.pid)===p.id));
+      if(!hasPurchaseRecord){
+        varStockHtml=`<div style="margin-top:7px;font-size:10px;color:var(--text3)">各規格庫存：庫存來自初始設定，無進貨明細可計算規格分佈</div>`;
+      } else {
+        const allVars=[...new Set([...p.vars,...Object.keys(vs)])];
+        varStockHtml=`<div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+          <span style="font-size:10px;color:var(--text3);margin-right:2px">各規格庫存：</span>`+
+          allVars.map(v=>{
+            const q=vs[v]||0;
+            const vc=q<=0?'dd':q<=1?'wn':'nn';
+            return `<span class="pill ${vc}" style="font-size:10px">${v||'（無規格）'} × ${q}</span>`;
+          }).join('')+`</div>`;
+      }
+    }
+    return `<div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div><div style="font-size:13px;font-weight:500">${p.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px">${p.jp||''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="pill ${sp}">${sl}</span>
+          <div style="font-size:16px;font-weight:500">${p.stock}<span style="font-size:11px;color:var(--text3);font-weight:400"> 件</span></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div class="ibg"><div class="ib" style="width:${pct}%"></div></div></div>
+      <div style="display:flex;gap:14px;font-size:11px;color:var(--text3);flex-wrap:wrap">
+        <span>均攤成本 ${ntd(cNT)}<span style="font-size:10px"> (含運費攤提)</span></span>
+        <span>售價 ${ntd(pNT)} / ${jpy(p.pjp)}</span>
+        <span style="font-weight:500;color:var(--text2)">壓貨 ${ntd(p.stock*cNT)}</span>
+      </div>
+      ${varStockHtml}
+    </div>`;
+  }).join('');
+}
+// ── 商品圖片處理 ──
+let _mpImgData=null; // base64 暫存
+function handleProdImg(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    _mpImgData=ev.target.result;
+    const prev=document.getElementById('mp-img-preview');
+    const lbl=document.getElementById('mp-img-label');
+    const clr=document.getElementById('mp-img-clear');
+    prev.src=_mpImgData;prev.style.display='block';
+    lbl.style.display='none';clr.style.display='block';
+  };
+  reader.readAsDataURL(f);
+}
+function clearProdImg(e){
+  e.stopPropagation();
+  _mpImgData=null;
+  document.getElementById('mp-img-file').value='';
+  document.getElementById('mp-img-preview').style.display='none';
+  document.getElementById('mp-img-preview').src='';
+  document.getElementById('mp-img-label').style.display='block';
+  document.getElementById('mp-img-clear').style.display='none';
+}
+function openPM(id){
+  S.epid=id||null;S.tvars=[];_mpImgData=null;
+  document.getElementById('mp-t').textContent=id?'編輯商品':'新增商品';
+  ['mp-name','mp-jp','mp-ctw','mp-cjp','mp-ptw','mp-pjp','mp-note'].forEach(f=>{const e=document.getElementById(f);if(e)e.value='';});
+  document.getElementById('mp-stock').value='0';document.getElementById('mp-min').value='2';
+  // reset image UI
+  document.getElementById('mp-img-file').value='';
+  document.getElementById('mp-img-preview').style.display='none';
+  document.getElementById('mp-img-preview').src='';
+  document.getElementById('mp-img-label').style.display='block';
+  document.getElementById('mp-img-clear').style.display='none';
+  if(id){const p=gp(id);if(!p)return;S.tvars=[...(p.vars||[])];
+    document.getElementById('mp-name').value=p.name;document.getElementById('mp-jp').value=p.jp||'';
+    document.getElementById('mp-ctw').value=p.ctw||j2t(p.cjp||0);document.getElementById('mp-cjp').value=p.cjp||'';
+    document.getElementById('mp-ptw').value=p.ptw||j2t(p.pjp||0);document.getElementById('mp-pjp').value=p.pjp||'';
+    document.getElementById('mp-stock').value=p.stock||0;document.getElementById('mp-min').value=p.min||2;
+    document.getElementById('mp-note').value=p.note||'';
+    if(p.img){
+      _mpImgData=p.img;
+      const prev=document.getElementById('mp-img-preview');
+      prev.src=p.img;prev.style.display='block';
+      document.getElementById('mp-img-label').style.display='none';
+      document.getElementById('mp-img-clear').style.display='block';
+    }
+  }
+  renderVT();om('m-prod');
+}
+function addVar(e){if(e.key!=='Enter')return;const i=document.getElementById('mp-vi');const v=i.value.trim();if(v&&!S.tvars.includes(v)){S.tvars.push(v);renderVT();}i.value='';}
+function removeVar(v){S.tvars=S.tvars.filter(x=>x!==v);renderVT();}
+function renderVT(){document.getElementById('mp-vt').innerHTML=S.tvars.map(v=>`<div class="tag">${v}<button class="tx" onclick="removeVar('${v}')">×</button></div>`).join('');}
+function saveProd(){
+  const name=document.getElementById('mp-name').value.trim();if(!name){alert('請輸入商品名稱');return;}
+  const d={name,jp:document.getElementById('mp-jp').value.trim(),
+    ctw:parseFloat(document.getElementById('mp-ctw').value)||0,cjp:parseFloat(document.getElementById('mp-cjp').value)||0,
+    ptw:parseFloat(document.getElementById('mp-ptw').value)||0,pjp:parseFloat(document.getElementById('mp-pjp').value)||0,
+    stock:parseInt(document.getElementById('mp-stock').value)||0,min:parseInt(document.getElementById('mp-min').value)||2,
+    vars:[...S.tvars],note:document.getElementById('mp-note').value.trim(),date:td(),
+    img:_mpImgData||null};
+  if(S.epid){const i=S.products.findIndex(p=>p.id===S.epid);if(i>=0)S.products[i]={...S.products[i],...d};}
+  else{d.id=S.nPid++;S.products.push(d);}
+  sv();cm('m-prod');renderProd();
+}
+function delProd(id){cfm('確定刪除此商品？',()=>{S.products=S.products.filter(p=>p.id!==id);sv();renderProd();});}
+function renderProd(){
+  const q=(document.getElementById('p-s')?.value||'').toLowerCase();
+  let list=S.products.filter(p=>(!q||p.name.toLowerCase().includes(q)||(p.jp||'').toLowerCase().includes(q))&&inRange(p.date,'prod'));
+  if(_prodSort.field){
+    list=[...list].sort((a,b)=>{
+      const av=_prodSort.field==='stock'?a.stock:(a.ptw||j2t(a.pjp));
+      const bv=_prodSort.field==='stock'?b.stock:(b.ptw||j2t(b.pjp));
+      return _prodSort.dir==='asc'?av-bv:bv-av;
+    });
+  }
+  const tb=document.getElementById('prod-tb');
+  if(!list.length){tb.innerHTML='<tr><td colspan="5"><div class="empty">此期間無商品</div></td></tr>';return;}
+  tb.innerHTML=list.map(p=>{
+    const varsHtml=p.vars&&p.vars.length
+      ?p.vars.map(v=>`<span class="pill nn" style="font-size:10px;padding:1px 6px">${v}</span>`).join(' ')
+      :'<span style="color:var(--text3);font-size:11px">—</span>';
+    const imgCell=p.img
+      ?`<img src="${p.img}" class="prod-thumb">`
+      :`<div style="width:36px;height:36px;background:var(--bg2);border:1px solid var(--border);flex-shrink:0"></div>`;
+    return `<tr>
+      <td style="padding:8px">${imgCell}</td>
+      <td><div style="font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.jp||''}</div></td>
+      <td><div>${ntd(p.ctw||j2t(p.cjp))}</div><div style="font-size:11px;color:var(--text3)">${jpy(p.cjp)}</div></td>
+      <td><div>${ntd(p.ptw||j2t(p.pjp))}</div><div style="font-size:11px;color:var(--text3)">${jpy(p.pjp)}</div></td>
+      <td><div style="display:flex;flex-wrap:wrap;gap:3px">${varsHtml}</div></td>
+      <td><span class="pill ${p.stock===0?'dd':p.stock<=p.min?'wn':'nn'}">${p.stock}</span></td>
+      <td style="font-size:11px;color:var(--text3)">${p.min??2}</td>
+      <td><div style="display:flex;gap:4px"><button class="btn btn-sm" onclick="openPM(${p.id})">編輯</button><button class="btn btn-sm btn-d" onclick="delProd(${p.id})">刪除</button></div></td>
+    </tr>`;
+  }).join('');
+}
+function openPoM(prefill){
+  S.poI=[{pid:'',v:'',qty:1,pt:0,pj:0}];
+  ['po-name','po-phone','po-store','po-note','po-dt','po-dj','po-cid','po-channel-other','po-address','po-freight'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('po-pickup').value='self';document.getElementById('po-sg').style.display='none';
+  document.getElementById('po-addr-wrap').style.display='none';document.getElementById('po-freight-wrap').style.display='none';
+  document.getElementById('po-total-bar').style.display='none';
+  document.getElementById('po-channel').value='IG';
+  document.getElementById('po-channel-other-wrap').style.display='none';
+  if(prefill){
+    if(prefill.pname)document.getElementById('po-name').value=prefill.pname;
+    if(prefill.pid){S.poI=[{pid:prefill.pid,v:'',qty:1,pt:prefill.sellNT||0,pj:prefill.jpyTaxed||0}];}
+  }
+  renderPoItems();om('m-po');
+}
+function toggleChannelOther(){
+  document.getElementById('po-channel-other-wrap').style.display=document.getElementById('po-channel').value==='other'?'flex':'none';
+}
+function toggleStore(){
+  const v=document.getElementById('po-pickup').value;
+  document.getElementById('po-sg').style.display=v==='store'?'flex':'none';
+  document.getElementById('po-addr-wrap').style.display=v==='delivery'?'block':'none';
+  document.getElementById('po-freight-wrap').style.display=(v==='store'||v==='delivery')?'block':'none';
+  poCalcTotal();
+}
+function poCalcTotal(){
+  const freight=parseFloat(document.getElementById('po-freight')?.value)||0;
+  const total=S.poI.reduce((a,i)=>a+i.qty*(i.pt||0),0);
+  const bar=document.getElementById('po-total-bar');
+  if(!bar)return;
+  const hasAmt=total>0||freight>0;
+  if(hasAmt){
+    bar.style.display='block';
+    if(freight>0){
+      bar.innerHTML=`商品合計 ${ntd(total)} + 運費 ${ntd(freight)} = 總計 <b style="color:var(--accent)">${ntd(total+freight)}</b>`;
+    } else {
+      bar.innerHTML=`商品合計 <b style="color:var(--accent)">${ntd(total)}</b>`;
+    }
+  } else {bar.style.display='none';}
+}
+function addOI(){S.poI.push({pid:'',v:'',qty:1,pt:0,pj:0});renderPoItems();poCalcTotal();}
+function renderPoItems(){
+  document.getElementById('po-items').innerHTML=S.poI.map((item,i)=>{
+    const qty=parseInt(item.qty)||1;
+    const pt=parseFloat(item.pt)||0;
+    const lineTotal=qty*pt;
+    const totalTag=lineTotal>0?`<div style="text-align:right;font-size:11px;color:var(--text2);margin-top:3px;padding-right:4px">${qty}件 × ${ntd(pt)} = <b style="color:var(--accent)">${ntd(lineTotal)}</b></div>`:'';
+    if(item.customName!==undefined){
+      return `<div style="margin-bottom:6px">
+        <div class="oi" style="margin-bottom:0">
+          <input type="text" value="${item.customName}" placeholder="品名" onchange="S.poI[${i}].customName=this.value;poCalcTotal()" style="flex:2;font-size:16px">
+          <input type="text" value="${item.v||''}" placeholder="規格" onchange="S.poI[${i}].v=this.value" style="flex:1;font-size:16px">
+          <input type="number" value="${item.qty}" min="1" onchange="updOI(${i},'qty',this.value)" style="flex:0 0 56px;font-size:16px">
+          <input type="number" value="${item.pt||''}" placeholder="NT" onchange="updOIP(${i},'t',this.value)" style="flex:1;font-size:16px">
+          <input type="number" value="${item.pj||''}" placeholder="¥" onchange="updOIP(${i},'j',this.value)" style="flex:1;font-size:16px">
+          ${S.poI.length>1?`<button class="btn btn-sm btn-d" onclick="rmOI(${i})">×</button>`:''}
+        </div>${totalTag}
+      </div>`;
+    }
+    const pO=S.products.map(p=>`<option value="${p.id}" ${item.pid==p.id?'selected':''}>${p.name}</option>`).join('');
+    const pr=item.pid?gp(parseInt(item.pid)):null;
+    const vO=pr?.vars?.length?pr.vars.map(v=>`<option value="${v}" ${item.v===v?'selected':''}>${v}</option>`).join(''):'<option value="">無規格</option>';
+    return `<div style="margin-bottom:6px">
+      <div class="oi" style="margin-bottom:0">
+        <select onchange="updOI(${i},'pid',this.value)" style="flex:2;font-size:16px"><option value="">選商品</option>${pO}</select>
+        <select onchange="updOI(${i},'v',this.value)" style="font-size:16px">${vO}</select>
+        <input type="number" value="${item.qty}" min="1" onchange="updOI(${i},'qty',this.value)" style="flex:0 0 56px;font-size:16px">
+        <input type="number" value="${item.pt||''}" placeholder="NT" onchange="updOIP(${i},'t',this.value)" style="flex:1;font-size:16px">
+        <input type="number" value="${item.pj||''}" placeholder="¥" onchange="updOIP(${i},'j',this.value)" style="flex:1;font-size:16px">
+        ${S.poI.length>1?`<button class="btn btn-sm btn-d" onclick="rmOI(${i})">×</button>`:''}
+      </div>${totalTag}
+    </div>`;
+  }).join('');
+}
+function updOI(i,f,v){
+  if(f==='pid'){
+    S.poI[i].pid=v;const p=v?gp(parseInt(v)):null;
+    S.poI[i].pt=p?p.ptw||j2t(p.pjp):0;S.poI[i].pj=p?p.pjp:0;S.poI[i].v=p?.vars?.[0]||'';
+    renderPoItems(); // re-render only when product selection changes (variant list needs update)
+  } else if(f==='qty'){S.poI[i].qty=parseInt(v)||1;}
+  else {S.poI[i][f]=v;}
+  poCalcTotal();
+}
+function updOIP(i,cur,v){
+  const val=parseFloat(v)||0;
+  if(cur==='t'){S.poI[i].pt=val;S.poI[i].pj=t2j(val);}
+  else{S.poI[i].pj=val;S.poI[i].pt=j2t(val);}
+  poCalcTotal();
+}
+function rmOI(i){S.poI.splice(i,1);renderPoItems();poCalcTotal();}
+function savePo(){
+  if(document.getElementById('m-po').dataset.mode==='qp'){saveQpPo();return;}
+  const name=document.getElementById('po-name').value.trim();if(!name){alert('請輸入客戶姓名');return;}
+  const valid=S.poI.filter(i=>i.pid);if(!valid.length){alert('請新增商品');return;}
+  const chVal=document.getElementById('po-channel').value;
+  const channel=chVal==='other'?(document.getElementById('po-channel-other').value.trim()||'其他'):chVal;
+  const base={name,phone:document.getElementById('po-phone').value.trim(),
+    channel,cid:document.getElementById('po-cid').value.trim(),
+    pickup:document.getElementById('po-pickup').value,store:document.getElementById('po-store').value.trim(),
+    address:document.getElementById('po-address').value.trim(),
+    freight:parseFloat(document.getElementById('po-freight').value)||0,
+    dj:parseFloat(document.getElementById('po-dj').value)||0,dt:parseFloat(document.getElementById('po-dt').value)||0,
+    items:valid.map(i=>({...i,pid:parseInt(i.pid),qty:parseInt(i.qty)||1})),
+    note:document.getElementById('po-note').value.trim()};
+  if(S.eqpoid){
+    const idx=S.preorders.findIndex(p=>p.id===S.eqpoid);
+    if(idx>=0)S.preorders[idx]={...S.preorders[idx],...base};
+    S.eqpoid=null;
+  } else {
+    const oid='PO-'+String(S.nPoid).padStart(3,'0');
+    S.preorders.push({id:S.nPoid++,oid,...base,status:'pending',date:td()});
+  }
+  document.querySelector('#m-po .mt').textContent='新增預購單';
+  document.querySelector('#m-po .mf .btn-p').textContent='建立';
+  sv();cm('m-po');renderPo();
+}
+function updPoSt(id,s){const o=S.preorders.find(p=>p.id===id);if(o){o.status=s;sv();renderPo();const w=document.getElementById('qp-po-wrap');if(w&&w.style.display!=='none')renderQpPoList();}}
+function delPo(id){cfm('確定刪除此預購單？',()=>{S.preorders=S.preorders.filter(o=>o.id!==id);sv();renderPo();});}
+function editPo(id){
+  const o=S.preorders.find(p=>p.id===id);if(!o)return;
+  S.eqpoid=id;
+  S.poI=o.items.map(i=>({...i}));
+  document.getElementById('po-name').value=o.name||'';
+  document.getElementById('po-phone').value=o.phone||'';
+  const chVal=['IG','Threads','Line','FB'].includes(o.channel)?o.channel:'other';
+  document.getElementById('po-channel').value=chVal;
+  if(chVal==='other'){
+    document.getElementById('po-channel-other-wrap').style.display='flex';
+    document.getElementById('po-channel-other').value=o.channel||'';
+  } else {
+    document.getElementById('po-channel-other-wrap').style.display='none';
+  }
+  document.getElementById('po-cid').value=o.cid||'';
+  const epv=o.pickup||'self';
+  document.getElementById('po-pickup').value=epv;
+  document.getElementById('po-sg').style.display=epv==='store'?'flex':'none';
+  document.getElementById('po-addr-wrap').style.display=epv==='delivery'?'block':'none';
+  document.getElementById('po-freight-wrap').style.display=(epv==='store'||epv==='delivery')?'block':'none';
+  document.getElementById('po-store').value=o.store||'';
+  document.getElementById('po-address').value=o.address||'';
+  document.getElementById('po-freight').value=o.freight||'';
+  document.getElementById('po-dt').value=o.dt||'';
+  document.getElementById('po-dj').value=o.dj||'';
+  document.getElementById('po-note').value=o.note||'';
+  document.querySelector('#m-po .mt').textContent='編輯預購單';
+  document.querySelector('#m-po .mf .btn-p').textContent='儲存修改';
+  renderPoItems();poCalcTotal();om('m-po');
+}
+function batchPoToSale(){
+  const checked=[...document.querySelectorAll('.po-chk:checked')].map(el=>parseInt(el.dataset.id));
+  if(!checked.length){alert('請先勾選要轉入銷貨的預購單');return;}
+  // 彙整所有待轉品項，先做庫存檢查
+  const allItems=[];
+  checked.forEach(id=>{
+    const o=S.preorders.find(p=>p.id===id);if(!o)return;
+    o.items.filter(i=>i.pid).forEach(item=>allItems.push({pid:item.pid,v:item.v||'',qty:parseInt(item.qty)||1}));
+  });
+  const short=checkStock(allItems);
+  const doTransfer=()=>{
+    checked.forEach(id=>{
+      const o=S.preorders.find(p=>p.id===id);if(!o)return;
+      // [FIX 6] sharedSid 用當前 nSid，所有品項共用，最後只遞增一次（避免跳號）
+      const sharedSid='S-'+String(S.nSid).padStart(3,'0');
+      const validItems=o.items.filter(i=>i.pid);
+      validItems.forEach((item,idx)=>{
+        const prod=gp(item.pid);
+        // id 欄位用獨立遞增的子序號以保持唯一性
+        S.sales.push({id:Date.now()+idx,sid:sharedSid,cust:o.name,pid:item.pid,v:item.v||'',qty:parseInt(item.qty)||1,
+          pj:item.pj||0,pt:item.pt||(prod?prod.ptw||j2t(prod.pjp||0):0),
+          cj:prod?prod.cjp||0:0,ct:prod?getWeightedAvgCost(prod.id):0,
+          freight:idx===0?(Number(o.freight)||0):0,
+          poid:o.id,date:td()});
+        if(prod)prod.stock=Math.max(0,prod.stock-(parseInt(item.qty)||1));
+      });
+      if(validItems.length)S.nSid++; // [FIX 6] 每張訂單只遞增一次
+    });
+    S.preorders=S.preorders.filter(o=>!checked.includes(o.id));
+    sv();renderPo();renderSa();renderInv();
+  };
+  if(short.length){
+    cfm('⚠️ 庫存不足警告\n\n'+stockWarnMsg(short).split('\n\n確定仍要繼續儲存？')[0]+'\n\n確定仍要批次轉入銷貨並刪除預購單？',doTransfer,'仍要轉入','btn-d');
+  } else {
+    cfm(`確定將 ${checked.length} 筆預購單轉入銷貨紀錄並刪除？`,doTransfer,'轉入並刪除','btn-d');
+  }
+}
+function renderPo(){
+  const q=(document.getElementById('po-s')?.value||'').toLowerCase();
+  const fs=document.getElementById('po-f')?.value||'';
+  const stL={pending:'待採購',payment:'待匯款',purchased:'已採購',arrived:'已到貨',shipped:'已出貨'};
+  const stC={pending:'wn',payment:'dd',purchased:'bl',arrived:'pp',shipped:'ok'};
+  const list=S.preorders.filter(o=>(!q||o.name.toLowerCase().includes(q))&&(!fs||o.status===fs)&&inRange(o.date,'po'));
+  const el=document.getElementById('po-list');
+  if(!list.length){el.innerHTML='<div class="empty">此期間無預購單</div>';return;}
+  el.innerHTML=list.map(o=>{
+    const itemTotal=o.items.reduce((a,i)=>a+i.qty*(i.pt||0),0);
+    const freight=o.freight||0;
+    const total=itemTotal+freight;
+    const pickupLabel=o.pickup==='store'?'店到店 '+o.store:o.pickup==='delivery'?'宅配 '+(o.address||''):'自取';
+    // 完整品項列表
+    const itemRows=o.items.map(i=>{
+      const p=gp(i.pid);
+      const name=p?p.name:(i.customName||'?');
+      const spec=i.v?` <span style="color:var(--text3)">(${i.v})</span>`:'';
+      const lineTotal=i.qty*(i.pt||0);
+      return `<div style="display:flex;align-items:baseline;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--border)">
+        <span style="font-size:12px;color:var(--text)">${name}${spec} <span style="color:var(--text3)">×${i.qty}</span></span>
+        <span style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;margin-left:8px">${ntd(i.pt||0)}<span style="color:var(--text3);font-weight:400"> × ${i.qty} = </span>${ntd(lineTotal)}</span>
+      </div>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:.625rem;display:flex;gap:10px;align-items:flex-start">
+      <input type="checkbox" class="po-chk" data-id="${o.id}" style="margin-top:14px;width:auto;flex:none;accent-color:var(--accent);width:16px;height:16px;cursor:pointer">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+          <div><div style="font-size:13px;font-weight:500">${o.oid} · ${o.name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${o.phone||''} · ${o.channel?'<span class="pill nn" style="font-size:10px;padding:1px 6px">'+o.channel+'</span> ':''} ${o.cid?'@'+o.cid+' · ':''} ${pickupLabel} · ${o.date}</div></div>
+          <span class="pill ${stC[o.status]}">${stL[o.status]}</span>
+        </div>
+        <div style="background:var(--bg2);border-radius:var(--rs);padding:7px 10px;margin-bottom:6px">${itemRows}
+          ${freight>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:var(--text3)"><span>運費</span><span>${ntd(freight)}</span></div>`:''}
+          <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-size:13px;font-weight:600;color:var(--accent)"><span>合計</span><span>${ntd(total)}</span></div>
+        </div>
+        ${o.note?`<div style="font-size:11px;color:var(--text3);background:var(--bg2);border-radius:var(--rs);padding:5px 8px;margin-bottom:6px">備註：${o.note}</div>`:''}
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div style="font-size:11px;color:var(--text3)">訂金 ${ntd(o.dt)}</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <select onchange="updPoSt(${o.id},this.value)" style="font-size:11px;padding:4px 7px;width:auto">
+              ${Object.entries(stL).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
+            </select>
+            <button class="btn btn-sm" onclick="editPo(${o.id})">編輯</button>
+            <button class="btn btn-sm btn-d" onclick="delPo(${o.id})">刪除</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openPuM(){
+  S._puEditId=null;
+  // [FIX 8] 初始化加上 _prevCur，確保首次切換幣別時換算正確
+  S.puI=[{pid:'',v:'',qty:1,cur:'ntd',costVal:0,cjp:0,ctw:0,_prevCur:'ntd'}];
+  ['pu-batch','pu-st','pu-sj','pu-note'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('pu-date').value=td();
+  document.querySelector('#m-pu .mt').textContent='新增進貨批次';
+  document.querySelector('#m-pu .mf .btn-p').textContent='儲存並入庫';
+  renderPuItems();const h=document.getElementById('pu-hint');if(h)h.textContent='';om('m-pu');
+}
+function addPuI(){S.puI.push({pid:'',v:'',qty:1,cur:'ntd',costVal:0,cjp:0,ctw:0,_prevCur:'ntd'});renderPuItems();}
+function renderPuItems(){
+  document.getElementById('pu-items').innerHTML=S.puI.map((item,i)=>{
+    const pO=S.products.map(p=>`<option value="${p.id}" ${item.pid==p.id?'selected':''}>${p.name}</option>`).join('');
+    const pr=item.pid?gp(parseInt(item.pid)):null;
+    const vO=pr?.vars?.length?pr.vars.map(v=>`<option value="${v}" ${item.v===v?'selected':''}>${v}</option>`).join(''):'<option value="">無規格</option>';
+    const cur=item.cur||'ntd';
+    const qty=parseInt(item.qty)||1;
+    const cv=parseFloat(item.costVal)||0;
+    const lineTotal=qty*cv;
+    // 總額顯示字串
+    const totalDisp=lineTotal>0?(cur==='ntd'?ntd(lineTotal):jpy(lineTotal)):(cur==='ntd'?'NT —':'¥ —');
+    const totalNT=cur==='jpy'?j2t(lineTotal):lineTotal;
+    return `<div style="background:var(--bg2);border-radius:var(--rs);padding:8px;margin-bottom:6px">
+      <!-- 主列：商品/規格/數量/幣別/總額 -->
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:7px">
+        <select onchange="updPuI(${i},'pid',this.value)" style="flex:2;min-width:90px"><option value="">選商品</option>${pO}</select>
+        <select onchange="updPuI(${i},'v',this.value)" style="flex:1;min-width:60px">${vO}</select>
+        <input type="number" value="${item.qty||1}" min="1" onchange="updPuI(${i},'qty',this.value);puHint()" style="flex:0 0 56px;font-size:16px" placeholder="數量">
+        <select onchange="updPuI(${i},'cur',this.value)" style="flex:0 0 52px;font-size:11px;padding:5px 4px">
+          <option value="ntd" ${cur==='ntd'?'selected':''}>NT</option>
+          <option value="jpy" ${cur==='jpy'?'selected':''}>¥</option>
+        </select>
+        <!-- 總額唯讀顯示 -->
+        <div style="flex:1;min-width:80px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--rs);padding:7px 9px;font-size:13px;font-weight:600;color:var(--accent);text-align:right">${totalDisp}${cur==='jpy'&&lineTotal>0?`<div style="font-size:10px;font-weight:400;color:var(--text3)">≈${ntd(totalNT)}</div>`:''}</div>
+        ${S.puI.length>1?`<button class="btn btn-sm btn-d" onclick="rmPuI(${i})">×</button>`:''}
+      </div>
+      <!-- 下方：可編輯單件成本 -->
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">單件成本</span>
+        <input type="number" value="${cv||''}" placeholder="${cur==='jpy'?'¥ 例：2200':'NT 例：500'}" onchange="updPuI(${i},'costVal',this.value);puHint()" style="flex:1;font-size:16px">
+        ${qty>1&&cv>0?`<span style="font-size:11px;color:var(--text3);white-space:nowrap">${qty} × ${cur==='ntd'?ntd(cv):jpy(cv)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');puHint();
+}
+function updPuI(i,f,v){
+  if(f==='pid'){S.puI[i].pid=v;const p=v?gp(parseInt(v)):null;
+    S.puI[i].costVal=p?(S.puI[i].cur==='ntd'?(p.ctw||j2t(p.cjp||0)):p.cjp||0):0;
+    S.puI[i].v=p?.vars?.[0]||'';}
+  else if(f==='qty')S.puI[i].qty=parseInt(v)||1;
+  else if(f==='cur'){S.puI[i].cur=v;
+    // 幣別切換時重算 costVal
+    const cv=S.puI[i].costVal||0;
+    if(v==='ntd'&&S.puI[i]._prevCur==='jpy')S.puI[i].costVal=j2t(cv);
+    else if(v==='jpy'&&S.puI[i]._prevCur==='ntd')S.puI[i].costVal=t2j(cv);
+    S.puI[i]._prevCur=v;}
+  else if(f==='costVal')S.puI[i].costVal=parseFloat(v)||0;
+  else S.puI[i][f]=v;
+  // 統一衍生 cjp（日幣成本，用於攤提計算）
+  const cur=S.puI[i].cur||'ntd';  // fix: 預設為台幣
+  const cv=S.puI[i].costVal||0;
+  S.puI[i].cjp=cur==='jpy'?cv:t2j(cv);
+  S.puI[i].ctw=cur==='ntd'?cv:j2t(cv);
+  renderPuItems();
+}
+function rmPuI(i){S.puI.splice(i,1);renderPuItems();}
+function puHint(){
+  const st=parseFloat(document.getElementById('pu-st')?.value)||0;
+  const sj=parseFloat(document.getElementById('pu-sj')?.value)||0;
+  const tq=S.puI.reduce((a,i)=>a+(parseInt(i.qty)||0),0);
+  const h=document.getElementById('pu-hint');
+  if(h&&(st>0||sj>0)&&tq>0){
+    const perNT=st>0?st/tq:j2t(sj/tq);
+    h.textContent=`運費攤提：${ntd(st||j2t(sj))} ÷ ${tq}件 = 每件 ${ntd(Math.round(perNT))}${sj>0?' ≈ '+jpy(Math.round(sj/tq)):''}`;
+  } else if(h)h.textContent='';
+}
+function savePu(){
+  const valid=S.puI.filter(i=>i.pid&&i.qty>0);if(!valid.length){alert('請新增品項');return;}
+  const stRaw=parseFloat(document.getElementById('pu-st').value)||0;
+  const sjRaw=parseFloat(document.getElementById('pu-sj').value)||0;
+  // 以台幣為主要運費計算基準
+  const stUsed=stRaw||(sjRaw>0?j2t(sjRaw):0);
+  const sjUsed=sjRaw||(stRaw>0?t2j(stRaw):0);
+  const tq=valid.reduce((a,i)=>a+i.qty,0);
+  const allocNT=tq>0?stUsed/tq:0;  // 每件運費（台幣）
+  const allocJPY=tq>0?sjUsed/tq:0; // 每件運費（日幣）
+  const data={batch:document.getElementById('pu-batch').value.trim()||'未命名批次',
+    date:document.getElementById('pu-date').value||td(),
+    sj:sjUsed,st:stUsed,
+    items:valid.map(i=>({...i,pid:parseInt(i.pid),qty:parseInt(i.qty),alloc:allocJPY,allocNT})),
+    note:document.getElementById('pu-note').value.trim()};
+  if(S._puEditId){
+    // [Fix 4] 先還原舊進貨庫存，再更新紀錄，再加入新庫存
+    const oldPu=S.purchases.find(p=>p.id===S._puEditId);
+    if(oldPu){
+      oldPu.items.forEach(i=>{const p=gp(parseInt(i.pid));if(p)p.stock=Math.max(0,p.stock-(parseInt(i.qty)||0));});
+    }
+    const idx=S.purchases.findIndex(p=>p.id===S._puEditId);
+    if(idx>=0)S.purchases[idx]={...S.purchases[idx],...data};
+    valid.forEach(i=>{const p=gp(parseInt(i.pid));if(p)p.stock+=parseInt(i.qty)||0;});
+    // [FIX 4] 偵測修改後是否有商品庫存因已售出而出現邏輯不足
+    const oversold=valid.filter(i=>{const p=gp(parseInt(i.pid));return p&&p.stock<0;}).map(i=>{const p=gp(parseInt(i.pid));return p.name;});
+    if(oversold.length)alert('⚠️ 注意：以下商品的進貨數量修改後，已售出數量超過庫存，庫存已截斷為 0，請重新核對：\n'+oversold.join('、'));
+    S._puEditId=null;
+  } else {
+    S.purchases.push({id:S.nPuid++,...data});
+    valid.forEach(i=>{const p=gp(parseInt(i.pid));if(p)p.stock+=parseInt(i.qty);});
+  }
+  document.querySelector('#m-pu .mt').textContent='新增進貨批次';
+  document.querySelector('#m-pu .mf .btn-p').textContent='儲存並入庫';
+  sv();cm('m-pu');renderPu();renderInv();
+}
+function renderPu(){
+  const fPu=S.purchases.filter(p=>inRange(p.date,'pu'));
+  const tb=document.getElementById('pu-tb');
+  if(!fPu.length){tb.innerHTML='<tr><td colspan="8"><div class="empty">此期間無進貨紀錄</div></td></tr>';return;}
+  const rows=[];
+  fPu.forEach(pu=>{
+    pu.items.forEach((item,idx)=>{
+      const p=gp(item.pid);
+      const unitCostNT=(item.ctw||j2t(item.cjp||0));
+      const unitAllocNT=item.allocNT!=null?item.allocNT:j2t(item.alloc||0);
+      const ucNT=unitCostNT+unitAllocNT;
+      const ucJPY=(item.cjp||0)+(item.alloc||0);
+      const isFirst=idx===0;
+      rows.push(`<tr>
+        <td style="font-weight:500">${pu.batch}</td>
+        <td>${p?p.name:'已刪除'}</td><td>${item.v||'-'}</td><td>${item.qty}</td>
+        <td>${ntd(item.ctw||j2t(item.cjp||0))}<div style="font-size:11px;color:var(--text3)">${jpy(item.cjp||0)}</div></td>
+        <td style="font-weight:500;color:var(--accent)">${ntd(Math.round(ucNT))}/件<div style="font-size:11px;color:var(--text3);font-weight:400">${jpy(Math.round(ucJPY))}/件</div>${unitAllocNT>0?`<div style="font-size:10px;color:var(--text3)">含運費攤${ntd(Math.round(unitAllocNT))}</div>`:''}</td>
+        <td style="font-size:11px;color:var(--text2)">${pu.date}</td>
+        <td>${isFirst?`<div style="display:flex;gap:4px"><button class="btn btn-sm" onclick="openPuEdit(${pu.id})">編輯</button><button class="btn btn-sm btn-d" onclick="delPu(${pu.id})">刪</button></div>`:''}</td>
+      </tr>`);
+    });
+    // 批次總金額列
+    const itemCostNT=pu.items.reduce((a,i)=>a+(i.ctw||j2t(i.cjp||0))*i.qty,0);
+    const itemCostJPY=pu.items.reduce((a,i)=>a+(i.cjp||0)*i.qty,0);
+    const freightNT=pu.st||0;const freightJPY=pu.sj||0;
+    const totalNT=itemCostNT+freightNT;const totalJPY=itemCostJPY+freightJPY;
+    rows.push(`<tr style="background:var(--bg2)">
+      <td colspan="4" style="text-align:left;font-size:11px;color:var(--text3);padding:6px">
+        ${freightNT>0?`商品 ${ntd(itemCostNT)} + 運費 ${ntd(freightNT)} =`:'商品合計'}
+      </td>
+      <td colspan="2" style="font-weight:600;color:var(--accent);padding:6px;text-align:left">
+        ${ntd(totalNT)}
+        <div style="font-size:11px;color:var(--text3);font-weight:400">${jpy(totalJPY)}</div>
+      </td>
+      <td colspan="2"></td>
+    </tr>`);
+  });
+  tb.innerHTML=rows.join('');
+}
+function delPu(id){
+  const pu=S.purchases.find(p=>p.id===id);
+  const affected=pu?S.sales.filter(s=>pu.items.some(i=>parseInt(i.pid)===parseInt(s.pid))):[];
+  const warn=affected.length?`\n\n⚠️ 注意：此批次商品有 ${affected.length} 筆已完成的銷售紀錄，其成本數字不會被更動（已結帳不回溯），毛利計算以原記錄為準。`:'';
+  // [FIX 11] 更精確說明：若部分商品已售出，庫存扣除量會被截斷在 0，可能造成不一致
+  const stockNote=pu?'\n\n刪除後庫存將依入庫數量扣除；若該商品已有銷售紀錄，庫存可能因截斷而不準確，建議刪除後手動核對庫存。':'';
+  cfm('確定刪除此進貨批次？'+stockNote+warn,()=>{
+    if(pu){
+      pu.items.forEach(item=>{
+        const p=gp(parseInt(item.pid));
+        if(p)p.stock=Math.max(0,p.stock-(parseInt(item.qty)||0));
+      });
+    }
+    S.purchases=S.purchases.filter(p=>p.id!==id);
+    sv();renderPu();renderInv();
+  });
+}
+function openPuEdit(id){
+  const pu=S.purchases.find(p=>p.id===id);if(!pu)return;
+  S._puEditId=id;
+  // fix: 補上舊格式品項缺少的 costVal/cur 欄位
+  S.puI=pu.items.map(i=>({
+    ...i,
+    cur:i.cur||'ntd',
+    costVal:i.costVal!=null?i.costVal:(i.ctw!=null?i.ctw:j2t(i.cjp||0)),
+    _prevCur:i.cur||'ntd'  // [FIX 8] 確保編輯時 _prevCur 也正確設定
+  }));
+  document.getElementById('pu-batch').value=pu.batch||'';
+  document.getElementById('pu-date').value=pu.date||td();
+  document.getElementById('pu-st').value=pu.st||'';
+  document.getElementById('pu-sj').value=pu.sj||'';
+  document.getElementById('pu-note').value=pu.note||'';
+  document.querySelector('#m-pu .mt').textContent='編輯進貨批次';
+  document.querySelector('#m-pu .mf .btn-p').textContent='儲存修改';
+  renderPuItems();const h=document.getElementById('pu-hint');if(h)h.textContent='';om('m-pu');
+}
+// 銷售 modal 多商品 state
+let _saItems=[];  // [{pid,v,qty,pt,pj,ct,cj}]
+let _saEditId=null;
+
+function toggleSaChannelOther(){
+  document.getElementById('s-channel-other-wrap').style.display=
+    document.getElementById('s-channel').value==='other'?'flex':'none';
+}
+function toggleSaPickup(){
+  const v=document.getElementById('s-pickup').value;
+  document.getElementById('s-sg').style.display=v==='store'?'flex':'none';
+  document.getElementById('s-addr-wrap').style.display=v==='delivery'?'block':'none';
+  document.getElementById('s-freight-wrap').style.display=(v==='store'||v==='delivery')?'block':'none';
+  sCalc();
+}
+function _resetSaModal(){
+  ['s-cust','s-phone','s-cid','s-channel-other','s-store','s-address','s-note','s-freight'].forEach(id=>{
+    const e=document.getElementById(id);if(e)e.value='';
+  });
+  document.getElementById('s-channel').value='IG';
+  document.getElementById('s-channel-other-wrap').style.display='none';
+  document.getElementById('s-pickup').value='self';
+  document.getElementById('s-sg').style.display='none';
+  document.getElementById('s-addr-wrap').style.display='none';
+  document.getElementById('s-freight-wrap').style.display='none';
+}
+function openSaM(prefill){
+  _saEditId=null;
+  _saItems=[{pid:'',v:'',qty:1,pt:0,pj:0,ct:0,cj:0}];
+  if(prefill&&prefill.items&&prefill.items.length)_saItems=prefill.items.map(i=>({...i}));
+  _resetSaModal();
+  document.getElementById('s-cust').value=prefill?.cust||'';
+  document.getElementById('s-date').value=td();
+  document.getElementById('sa-modal-title').textContent='新增銷售紀錄';
+  document.querySelector('#m-sa .mf .btn-p').textContent='儲存';
+  renderSaItems();sCalc();om('m-sa');
+}
+function closeSaM(){_saEditId=null;_saItems=[];_resetSaModal();cm('m-sa');}
+function addSaI(){_saItems.push({pid:'',v:'',qty:1,pt:0,pj:0,ct:0,cj:0});renderSaItems();}
+function rmSaI(i){_saItems.splice(i,1);if(!_saItems.length)_saItems=[{pid:'',v:'',qty:1,pt:0,pj:0,ct:0,cj:0}];renderSaItems();sCalc();}
+function renderSaItems(){
+  const el=document.getElementById('sa-items');if(!el)return;
+  el.innerHTML=_saItems.map((item,i)=>{
+    if(item.customProdName){
+      return `<div style="background:var(--bg2);border-radius:var(--rs);padding:8px;margin-bottom:6px">
+        <div class="frow f2" style="margin-bottom:4px">
+          <div class="fg"><div class="fl">商品</div><input type="text" value="${item.customProdName}" disabled style="background:var(--bg3);color:var(--text2);font-size:14px"></div>
+          <div class="fg"><div class="fl">規格</div><input type="text" value="${item.v||''}" onchange="updSaI(${i},'v',this.value)" style="font-size:16px"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:0.6fr 1fr 1fr 1fr 1fr auto;gap:5px;align-items:end">
+          <div class="fg"><div class="fl">數量</div><input type="number" value="${item.qty||1}" min="1" onchange="updSaI(${i},'qty',this.value)" style="font-size:16px"></div>
+          <div class="fg"><div class="fl">售價NT</div><input type="number" value="${item.pt||''}" placeholder="0" onchange="updSaIP(${i},'t',this.value)" style="font-size:16px"></div>
+          <div class="fg"><div class="fl">售價¥</div><input type="number" value="${item.pj||''}" placeholder="0" onchange="updSaIP(${i},'j',this.value)" style="font-size:16px"></div>
+          <div class="fg"><div class="fl">成本NT</div><input type="number" value="${item.ct||''}" placeholder="0" onchange="updSaI(${i},'ct',this.value)" style="font-size:16px"></div>
+          <div class="fg"><div class="fl">成本¥</div><input type="number" value="${item.cj||''}" placeholder="0" onchange="updSaI(${i},'cj',this.value)" style="font-size:16px"></div>
+          <div style="padding-bottom:2px">${_saItems.length>1?`<button class="btn btn-sm btn-d" onclick="rmSaI(${i})">×</button>`:''}</div>
+        </div>
+      </div>`;
+    }
+    const pO=S.products.map(p=>`<option value="${p.id}" ${item.pid==p.id?'selected':''}>${p.name}</option>`).join('');
+    const pr=item.pid?gp(parseInt(item.pid)):null;
+    const vO=pr?.vars?.length?pr.vars.map(v=>`<option value="${v}" ${item.v===v?'selected':''}>${v}</option>`).join(''):'<option value="">無規格</option>';
+    return `<div style="background:var(--bg2);border-radius:var(--rs);padding:8px;margin-bottom:6px">
+      <div class="frow f2" style="margin-bottom:4px">
+        <div class="fg"><div class="fl">商品</div><select onchange="updSaI(${i},'pid',this.value)" style="font-size:16px"><option value="">選商品</option>${pO}</select></div>
+        <div class="fg"><div class="fl">規格</div><select onchange="updSaI(${i},'v',this.value)" style="font-size:16px">${vO}</select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:0.6fr 1fr 1fr 1fr 1fr auto;gap:5px;align-items:end">
+        <div class="fg"><div class="fl">數量</div><input type="number" value="${item.qty||1}" min="1" onchange="updSaI(${i},'qty',this.value)" style="font-size:16px"></div>
+        <div class="fg"><div class="fl">售價NT</div><input type="number" value="${item.pt||''}" placeholder="0" onchange="updSaIP(${i},'t',this.value)" style="font-size:16px"></div>
+        <div class="fg"><div class="fl">售價¥</div><input type="number" value="${item.pj||''}" placeholder="0" onchange="updSaIP(${i},'j',this.value)" style="font-size:16px"></div>
+        <div class="fg"><div class="fl">成本NT</div><input type="number" value="${item.ct||''}" placeholder="0" onchange="updSaI(${i},'ct',this.value)" style="font-size:16px"></div>
+        <div class="fg"><div class="fl">成本¥</div><input type="number" value="${item.cj||''}" placeholder="0" onchange="updSaI(${i},'cj',this.value)" style="font-size:16px"></div>
+        <div style="padding-bottom:2px">${_saItems.length>1?`<button class="btn btn-sm btn-d" onclick="rmSaI(${i})">×</button>`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+// 取得商品所有進貨的加權平均攤運後單位成本（NT）
+function getWeightedAvgCost(pid){
+  let totalQty=0,totalCost=0;
+  S.purchases.forEach(pu=>{
+    pu.items.forEach(item=>{
+      if(parseInt(item.pid)===pid){
+        const qty=parseInt(item.qty)||0;
+        const unitBase=item.ctw!=null?item.ctw:j2t(item.cjp||0);
+        const unitAlloc=item.allocNT!=null?item.allocNT:j2t(item.alloc||0);
+        totalQty+=qty;
+        totalCost+=qty*(unitBase+unitAlloc);
+      }
+    });
+  });
+  if(totalQty>0)return Math.round(totalCost/totalQty);
+  const p=gp(pid);
+  return p?(p.ctw||j2t(p.cjp||0)):0;
+}
+function updSaI(i,f,v){
+  if(f==='pid'){
+    _saItems[i].pid=v;
+    const p=v?gp(parseInt(v)):null;
+    _saItems[i].pt=p?p.ptw||j2t(p.pjp||0):0;
+    _saItems[i].pj=p?p.pjp||0:0;
+    _saItems[i].ct=p?getWeightedAvgCost(parseInt(v)):0;
+    _saItems[i].cj=p?p.cjp||0:0;
+    _saItems[i].v=p?.vars?.[0]||'';
+    renderSaItems(); // re-render only when product changes
+  } else if(f==='qty'){_saItems[i].qty=parseInt(v)||1;}
+  else if(f==='v'){_saItems[i].v=v;}
+  else {_saItems[i][f]=parseFloat(v)||0;}
+  sCalc();
+}
+function updSaIP(i,cur,v){
+  const val=parseFloat(v)||0;
+  if(cur==='t'){_saItems[i].pt=val;_saItems[i].pj=t2j(val);}
+  else{_saItems[i].pj=val;_saItems[i].pt=j2t(val);}
+  sCalc();
+}
+function sCalc(){
+  const freight=parseFloat(document.getElementById('s-freight')?.value)||0;
+  const itemRev=_saItems.reduce((a,i)=>a+(i.pt||0)*(i.qty||1),0);
+  const itemCost=_saItems.reduce((a,i)=>a+(i.ct||0)*(i.qty||1),0);
+  const totRev=itemRev+freight;
+  const profit=itemRev-itemCost; // 運費買空賣空，不計入毛利
+  const margin=itemRev>0?(profit/itemRev*100):0; // 毛利率以商品售價為基準
+  const c=profit>=0?'var(--ok)':'var(--danger)';
+  const el=document.getElementById('s-prev');
+  const freightTip=freight>0?` + 運費${ntd(freight)}`:'';
+  if(el)el.innerHTML=`商品售價${ntd(itemRev)}${freightTip} = 總收 <b>${ntd(totRev)}</b> · 商品成本 <b>${ntd(itemCost)}</b> = <b style="color:${c}">毛利 ${ntd(profit)}</b> <span style="color:${c}">(${margin.toFixed(1)}%)</span>`;
+}
+// ── 庫存檢查：回傳不足的品項陣列 [{name,v,need,have}]
+function checkStock(items){
+  // 累計本次銷售需求（同一 pid+v 加總）
+  const need={};
+  items.forEach(item=>{
+    if(!item.pid&&!item.customProdName)return;
+    const p=item.pid?gp(parseInt(item.pid)):null;
+    if(!p)return; // 連線商品無庫存可查
+    const key=item.pid+'|'+(item.v||'');
+    need[key]=(need[key]||{p,v:item.v||'',qty:0});
+    need[key].qty+=(parseInt(item.qty)||1);
+  });
+  const short=[];
+  Object.values(need).forEach(({p,v,qty})=>{
+    if(p.stock<qty)short.push({name:p.name,v,need:qty,have:p.stock});
+  });
+  return short;
+}
+function stockWarnMsg(short){
+  return '以下商品庫存不足：\n'+short.map(s=>`・${s.name}${s.v?' ('+s.v+')':''} — 需要 ${s.need} 件，庫存僅剩 ${s.have} 件`).join('\n')+'\n\n確定仍要繼續儲存？';
+}
+function saveSa(){
+  // 客戶姓名選填，不做必填驗證
+  const valid=_saItems.filter(i=>i.pid||i.customProdName);
+  if(!valid.length){alert('請選擇至少一項商品');return;}
+  const short=checkStock(valid);
+  if(short.length){cfm(stockWarnMsg(short),()=>_doSaveSa(valid),'仍要儲存','btn-d');return;}
+  _doSaveSa(valid);
+}
+function _doSaveSa(valid){
+  const cust=document.getElementById('s-cust').value.trim()||'散客';
+  const sdate=document.getElementById('s-date').value;
+  const saFreight=parseFloat(document.getElementById('s-freight').value)||0;
+  const saChVal=document.getElementById('s-channel').value;
+  const saChannel=saChVal==='other'?(document.getElementById('s-channel-other').value.trim()||'其他'):saChVal;
+  const saPhone=document.getElementById('s-phone').value.trim();
+  const saCid=document.getElementById('s-cid').value.trim();
+  const saPickup=document.getElementById('s-pickup').value;
+  const saStore=document.getElementById('s-store').value.trim();
+  const saAddress=document.getElementById('s-address').value.trim();
+  const saNote=document.getElementById('s-note').value.trim();
+  if(_saEditId){
+    S.sales.filter(s=>s.sid===_saEditId).forEach(s=>{
+      const p=S.products.find(x=>x.id===parseInt(s.pid));
+      if(p)p.stock+=(parseInt(s.qty)||0);
+    });
+    S.sales=S.sales.filter(s=>s.sid!==_saEditId);
+  }
+  const sharedSid='S-'+String(S.nSid).padStart(3,'0');
+  valid.forEach((item,idx)=>{
+    S.sales.push({id:S.nSid++,sid:sharedSid,cust,
+      phone:saPhone,channel:saChannel,cid:saCid,
+      pickup:saPickup,store:saStore,address:saAddress,
+      pid:parseInt(item.pid)||0,v:item.v||'',qty:item.qty||1,
+      pt:item.pt||0,pj:item.pj||0,ct:item.ct||0,cj:item.cj||0,
+      freight:idx===0?saFreight:0,
+      customProdName:item.customProdName||null,
+      note:saNote,date:sdate});
+    const p=S.products.find(x=>x.id===parseInt(item.pid));
+    if(p)p.stock=Math.max(0,p.stock-(item.qty||1));
+  });
+  _saEditId=null;_saItems=[];
+  sv();cm('m-sa');renderSa();renderInv();
+}
+function editSa(sid){
+  const records=S.sales.filter(s=>s.sid===sid);
+  if(!records.length)return;
+  const first=records[0];
+  _saEditId=sid;
+  _saItems=records.map(s=>({pid:s.pid,v:s.v||'',qty:s.qty||1,pt:s.pt||0,pj:s.pj||0,ct:s.ct||0,cj:s.cj||0,customProdName:s.customProdName||null}));
+  _resetSaModal();
+  document.getElementById('s-cust').value=first.cust||'';
+  document.getElementById('s-phone').value=first.phone||'';
+  const chVal=['IG','Threads','Line','FB'].includes(first.channel)?first.channel:'other';
+  document.getElementById('s-channel').value=chVal;
+  if(chVal==='other'){document.getElementById('s-channel-other-wrap').style.display='flex';document.getElementById('s-channel-other').value=first.channel||'';}
+  document.getElementById('s-cid').value=first.cid||'';
+  const epv=first.pickup||'self';
+  document.getElementById('s-pickup').value=epv;
+  document.getElementById('s-sg').style.display=epv==='store'?'flex':'none';
+  document.getElementById('s-addr-wrap').style.display=epv==='delivery'?'block':'none';
+  document.getElementById('s-freight-wrap').style.display=(epv==='store'||epv==='delivery')?'block':'none';
+  document.getElementById('s-store').value=first.store||'';
+  document.getElementById('s-address').value=first.address||'';
+  document.getElementById('s-freight').value=first.freight||'';
+  document.getElementById('s-note').value=first.note||'';
+  document.getElementById('s-date').value=first.date||td();
+  document.getElementById('sa-modal-title').textContent='編輯銷售紀錄';
+  document.querySelector('#m-sa .mf .btn-p').textContent='儲存修改';
+  renderSaItems();sCalc();om('m-sa');
+}
+function delSa(sid){
+  cfm('確定刪除此銷售紀錄？',()=>{
+    // [Fix 1] 刪除前先還原庫存
+    S.sales.filter(s=>s.sid===sid).forEach(s=>{
+      const p=S.products.find(x=>x.id===parseInt(s.pid));
+      if(p)p.stock+=(parseInt(s.qty)||0);
+    });
+    S.sales=S.sales.filter(s=>s.sid!==sid);
+    sv();renderSa();renderInv();
+  });
+}
+function renderSa(){
+  const fS=S.sales.filter(s=>inRange(s.date,'sa'));
+  const el=document.getElementById('sa-list');
+  if(!fS.length){el.innerHTML='<div class="empty" style="padding:2rem">此期間無銷售紀錄</div>';return;}
+  // 以 sid 分組
+  const groups={};const order=[];
+  fS.forEach(s=>{
+    if(!groups[s.sid]){groups[s.sid]=[];order.push(s.sid);}
+    groups[s.sid].push(s);
+  });
+  const stPickup={self:'自取',store:'店到店',delivery:'宅配'};
+  el.innerHTML=order.map(sid=>{
+    const list=groups[sid];
+    const first=list[0];
+    const itemRev=list.reduce((a,s)=>a+s.pt*s.qty,0);
+    const itemCost=list.reduce((a,s)=>a+s.ct*s.qty,0);
+    const totalFreight=list.reduce((a,s)=>a+(s.freight||s.ship||0),0);
+    const totRev=itemRev+totalFreight;
+    const profit=itemRev-itemCost;
+    const margin=itemRev>0?(profit/itemRev*100):0;
+    const pc=profit>=0?'var(--ok)':'var(--danger)';
+    const pickupLabel=first.pickup?(stPickup[first.pickup]||first.pickup)+(first.store?' '+first.store:first.address?' '+first.address:''):'';
+    // 品項列表（含成本）
+    const itemRows=list.map(s=>{
+      const name=s.customProdName||(s.pid&&gp(s.pid)?gp(s.pid).name:'?');
+      const spec=s.v?` <span style="color:var(--text3)">(${s.v})</span>`:'';
+      const lineRev=s.pt*s.qty;
+      const lineCost=s.ct*s.qty;
+      const lineProfit=lineRev-lineCost;
+      return `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:1px dashed var(--border)">
+        <span style="font-size:12px">${name}${spec} <span style="color:var(--text3)">×${s.qty}</span></span>
+        <span style="font-size:11px;color:var(--text2);text-align:right;white-space:nowrap;margin-left:8px">
+          售 ${ntd(s.pt)}×${s.qty}=${ntd(lineRev)}
+          <span style="color:var(--text3)"> · 成本 ${ntd(lineCost)}</span>
+        </span>
+      </div>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:.625rem">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+        <div>
+          <div style="font-size:13px;font-weight:500">${sid} · ${first.cust||'散客'}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">
+            ${first.channel?`<span class="pill nn" style="font-size:10px;padding:1px 5px">${first.channel}</span> `:''}
+            ${first.cid?'@'+first.cid+' · ':''}
+            ${pickupLabel?pickupLabel+' · ':''}
+            ${first.date}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:600;color:var(--accent)">${ntd(totRev)}</div>
+          <div style="font-size:11px;font-weight:600;color:${pc}">${ntd(profit)} <span style="font-weight:400">(${margin.toFixed(1)}%)</span></div>
+        </div>
+      </div>
+      <div style="background:var(--bg2);border-radius:var(--rs);padding:7px 10px;margin-bottom:6px">${itemRows}
+        ${totalFreight>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;color:var(--text3)"><span>運費</span><span>${ntd(totalFreight)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;padding:4px 0 0;flex-wrap:wrap;gap:6px">
+          <span style="font-size:11px;color:var(--text3)">成本合計 <b style="color:var(--text2)">${ntd(itemCost)}</b>${totalFreight>0?` + 運費 ${ntd(totalFreight)}`:''}
+          </span>
+          <span style="font-size:13px;font-weight:600;color:var(--accent)">收款 ${ntd(totRev)}</span>
+        </div>
+      </div>
+      ${first.note?`<div style="font-size:11px;color:var(--text3);background:var(--bg2);border-radius:var(--rs);padding:5px 8px;margin-bottom:6px">備註：${first.note}</div>`:''}
+      <div style="display:flex;justify-content:flex-end;gap:6px">
+        <button class="btn btn-sm" onclick="editSa('${sid}')">編輯</button>
+        <button class="btn btn-sm btn-d" onclick="delSa('${sid}')">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderRep(){
+  const fS=S.sales.filter(s=>inRange(s.date,'rep'));
+  const itemRevAll=fS.reduce((a,s)=>a+s.pt*s.qty,0);
+  const itemCostAll=fS.reduce((a,s)=>a+s.ct*s.qty,0);
+  const freightAll=fS.reduce((a,s)=>a+(s.freight||s.ship||0),0);
+  const rev=itemRevAll+freightAll;
+  const profit=itemRevAll-itemCostAll;
+  const margin=itemRevAll>0?(profit/itemRevAll*100):0;
+  // 當前庫存總值（加權平均攤運後成本）
+  const invVal=S.products.reduce((a,p)=>a+p.stock*getWeightedAvgCost(p.id),0);
+  document.getElementById('rep-stats').innerHTML=`
+    <div class="stat"><div class="slbl">期間銷售額</div><div class="sval" style="font-size:14px">${ntd(rev)}</div></div>
+    <div class="stat"><div class="slbl">期間毛利</div><div class="sval" style="font-size:14px;color:${profit>=0?'var(--ok)':'var(--danger)'}">${ntd(profit)}</div></div>
+    <div class="stat"><div class="slbl">平均毛利率</div><div class="sval">${margin.toFixed(1)}%</div></div>
+    <div class="stat"><div class="slbl">目前庫存總值</div><div class="sval" style="font-size:14px">${ntd(invVal)}</div><div style="font-size:10px;color:var(--text3);margin-top:3px">即時庫存（非篩選期間）</div></div>`;
+  // ─── 月度圖表資料 ───
+  // 所有銷售按月分組（不受 filter 限制，顯示完整趨勢；但受日期過濾）
+  const mMap={};
+  fS.forEach(s=>{
+    const m=s.date.substring(0,7);
+    if(!mMap[m])mMap[m]={rev:0,itemRev:0,cost:0,profit:0};
+    mMap[m].rev+=s.pt*s.qty+(s.freight||s.ship||0);
+    mMap[m].itemRev+=s.pt*s.qty;
+    mMap[m].cost+=s.ct*s.qty;
+    mMap[m].profit+=s.pt*s.qty-s.ct*s.qty;
+  });
+  // 月末庫存總值：累積進貨成本 - 累積銷售成本
+  const allMonths=[...new Set([
+    ...S.purchases.map(p=>p.date.substring(0,7)),
+    ...S.sales.map(s=>s.date.substring(0,7))
+  ])].sort();
+  const getInvAt=targetM=>{
+    let v=0;
+    S.purchases.forEach(pu=>{if(pu.date.substring(0,7)<=targetM)pu.items.forEach(i=>{
+      const uc=(i.ctw||j2t(i.cjp||0))+(i.allocNT!=null?i.allocNT:j2t(i.alloc||0));
+      v+=uc*(parseInt(i.qty)||0);
+    });});
+    S.sales.forEach(s=>{if(s.date.substring(0,7)<=targetM)v-=(s.ct||0)*(s.qty||1);});
+    return Math.max(0,v);
+  };
+  const months=Object.keys(mMap).sort();
+  if(!months.length){
+    document.getElementById('rep-chart').innerHTML='<div class="empty">此期間無銷售資料</div>';
+    document.getElementById('rep-legend').innerHTML='';return;
+  }
+  const chartData=months.map(m=>({
+    m,rev:mMap[m].rev,itemRev:mMap[m].itemRev,
+    profit:mMap[m].profit,
+    invVal:getInvAt(m),
+    margin:mMap[m].itemRev>0?(mMap[m].profit/mMap[m].itemRev*100):0
+  }));
+  drawRepChart(chartData);
+}
+function drawRepChart(data){
+  const el=document.getElementById('rep-chart');
+  const legend=document.getElementById('rep-legend');
+  if(!el)return;
+  const W=580,H=260;
+  const PL=68,PR=52,PT=16,PB=46;
+  const cW=W-PL-PR,cH=H-PT-PB;
+  const n=data.length;
+  const x=i=>PL+(n<2?cW/2:i/(n-1)*cW);
+  // Left axis: NT values (rev, invVal)
+  const maxNT=Math.max(...data.map(d=>Math.max(d.rev,d.invVal)),1);
+  const yNT=v=>PT+cH-(v/maxNT*cH);
+  // Right axis: margin %
+  const maxPct=Math.max(...data.map(d=>d.margin),100);
+  const yPct=v=>PT+cH-(v/maxPct*cH);
+  // helpers
+  const fmt=v=>v>=10000?Math.round(v/1000)+'k':Math.round(v)+'';
+  const line=(pts,col,dash='')=>{
+    if(pts.length<2)return pts.map(([px,py])=>`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${col}"/>`).join('');
+    const d=pts.map(([px,py],i)=>`${i?'L':'M'}${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
+    return `<path d="${d}" stroke="${col}" stroke-width="2.2" fill="none"${dash?` stroke-dasharray="${dash}"`:''}/>`;
+  };
+  const dots=(pts,col)=>pts.map(([px,py],i)=>`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3.5" fill="${col}" stroke="#fff" stroke-width="1.5"><title>${data[i].m}</title></circle>`).join('');
+  // axis ticks (left)
+  const leftTicks=[0,.25,.5,.75,1].map(f=>{
+    const v=maxNT*f,yv=yNT(v),lv=fmt(v);
+    return `<line x1="${PL}" y1="${yv.toFixed(1)}" x2="${PL+cW}" y2="${yv.toFixed(1)}" stroke="var(--border)" stroke-width="${f===0?1.5:0.8}"/>
+    <text x="${PL-6}" y="${(yv+4).toFixed(1)}" text-anchor="end" fill="var(--text3)" font-size="10">${lv}</text>`;
+  }).join('');
+  // axis ticks (right)
+  const rightTicks=[0,25,50,75,100].map(v=>{
+    const yv=yPct(Math.min(v,maxPct));
+    return `<text x="${PL+cW+6}" y="${(yv+4).toFixed(1)}" text-anchor="start" fill="#8A6830" font-size="10">${v}%</text>`;
+  }).join('');
+  // x labels
+  const xLabels=data.map((d,i)=>{
+    const [yr,mo]=d.m.split('-');
+    const lbl=mo==='01'?`${yr.slice(2)}/${mo}`:mo+'月';
+    return `<text x="${x(i).toFixed(1)}" y="${(PT+cH+14).toFixed(1)}" text-anchor="middle" fill="var(--text3)" font-size="10">${lbl}</text>`;
+  }).join('');
+  // points
+  const revPts=data.map((d,i)=>[x(i),yNT(d.rev)]);
+  const invPts=data.map((d,i)=>[x(i),yNT(d.invVal)]);
+  const mgnPts=data.map((d,i)=>[x(i),yPct(d.margin)]);
+  // value labels on last point
+  const last=data[data.length-1];
+  const lx=x(n-1);
+  const valLabels=`
+    <text x="${(lx+6).toFixed(1)}" y="${(yNT(last.rev)+4).toFixed(1)}" fill="var(--ok)" font-size="9" font-weight="600">${fmt(last.rev)}</text>
+    <text x="${(lx+6).toFixed(1)}" y="${(yNT(last.invVal)+4).toFixed(1)}" fill="#2A527A" font-size="9" font-weight="600">${fmt(last.invVal)}</text>`;
+  const svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;overflow:visible">
+    ${leftTicks}
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+cH}" stroke="var(--border2)" stroke-width="1.5"/>
+    <line x1="${PL+cW}" y1="${PT}" x2="${PL+cW}" y2="${PT+cH}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3"/>
+    ${rightTicks}
+    ${xLabels}
+    ${line(revPts,'var(--ok)')}
+    ${line(invPts,'#2A527A','5,4')}
+    ${line(mgnPts,'#8A6830')}
+    ${dots(revPts,'var(--ok)')}
+    ${dots(invPts,'#2A527A')}
+    ${dots(mgnPts,'#8A6830')}
+    ${n>1?valLabels:''}
+    <text x="${(PL-52).toFixed(1)}" y="${(PT+cH/2+4).toFixed(1)}" fill="var(--text3)" font-size="10">NT</text>
+    <text x="${(PL+cW+PR-6).toFixed(1)}" y="${(PT+cH/2+4).toFixed(1)}" fill="#8A6830" font-size="10">%</text>
+  </svg>`;
+  el.innerHTML=svg;
+  legend.innerHTML=[
+    ['var(--ok)','銷售金額',''],
+    ['#2A527A','庫存總值（累計至當月，不受篩選）','5,4'],
+    ['#8A6830','毛利率 (右軸)','']
+  ].map(([c,l,d])=>`<span style="display:flex;align-items:center;gap:5px">
+    <svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="${c}" stroke-width="2.2"${d?` stroke-dasharray="${d}"`:''}/>
+    <circle cx="11" cy="5" r="3" fill="${c}" stroke="#fff" stroke-width="1.5"/></svg>
+    <span style="color:var(--text2)">${l}</span></span>`).join('');
+}
+
+/* ═══ 快速訂價 ═══ */
+let _qpLast=null; // 暫存最新試算結果供儲存用
+
+function qpTax(){document.getElementById('qp-taxr').disabled=document.getElementById('qp-ti').checked;}
+
+function qpCalc(){
+  const amt=parseFloat(document.getElementById('qp-amt').value)||0;
+  const el=document.getElementById('qp-result');
+  const saveArea=document.getElementById('qp-save-area');
+  if(!amt){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:1.25rem 0;background:var(--bg2);border-radius:var(--rs);margin-top:1rem">輸入金額後自動試算 ↑</div>';
+    saveArea.style.display='none';_qpLast=null;return;
+  }
+  const cur=document.getElementById('qp-cur').value;
+  const taxInc=document.getElementById('qp-ti').checked;
+  const taxR=(parseFloat(document.getElementById('qp-taxr').value)||10)/100;
+  const feeType=document.querySelector('input[name="qp-fee"]:checked')?.value||'rate';
+  const pname=document.getElementById('qp-pname').value.trim();
+
+  let jpyAmt=cur==='j'?amt:t2j(amt);
+  let jpyTaxed=taxInc?jpyAmt:Math.round(jpyAmt*(1+taxR));
+  // [FIX 2] costNT 統一用市場匯率計算（進貨真實成本），
+  // 當 rate 模式時 sellNT 用自訂匯率，兩者差距就是代購費利潤
+  let costNT=j2t(jpyTaxed);
+  let sellNT;
+  let feeDesc='';
+  let usedRate=S.rate; // 用於顯示的換算匯率
+  if(feeType==='rate'){
+    const r=parseFloat(document.getElementById('qp-rate').value)||S.rate;
+    usedRate=r;
+    sellNT=Math.round(jpyTaxed*r);
+    feeDesc='代購匯率×'+r.toFixed(3)+(Math.abs(r-S.rate)>0.0001?`（市場${S.rate.toFixed(4)}）`:'');
+  } else if(feeType==='pct'){
+    const pct=(parseFloat(document.getElementById('qp-pct').value)||0)/100;
+    sellNT=Math.round(costNT*(1+pct));
+    feeDesc='加成+'+(pct*100).toFixed(0)+'%';
+  } else {
+    const fix=parseFloat(document.getElementById('qp-fix').value)||0;
+    sellNT=Math.round(costNT+fix);
+    feeDesc='固定費+NT'+fix;
+  }
+  const profit=sellNT-costNT;
+  // [FIX 2] 毛利率以售價為基準（代購費 ÷ 售價）
+  const margin=sellNT>0?(profit/sellNT*100):0;
+  const pc=profit>=0?'var(--ok)':'var(--danger)';
+  const taxDesc=taxInc?'含稅':'未含稅+'+(taxR*100).toFixed(0)+'%';
+
+  // 暫存結果
+  _qpLast={pname:pname||'（未命名）',jpyAmt,jpyTaxed,costNT,sellNT,profit,margin,taxDesc,feeDesc,taxInc,taxR,rate:S.rate,ts:now()};
+
+  el.innerHTML=`
+    <div class="qpr" style="margin-top:1rem">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">市場匯率 ${S.rate.toFixed(4)} · ${taxDesc} · ${feeDesc}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:12px;color:var(--text2)">日幣原價</span>
+        <span style="font-size:16px;font-weight:500">${jpy(jpyAmt)}</span>
+      </div>
+      ${!taxInc?`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:12px;color:var(--text2)">含稅後（+${Math.round(taxR*100)}%）</span>
+        <span style="font-size:16px;font-weight:500">${jpy(jpyTaxed)}</span>
+      </div>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:12px;color:var(--text2)">換算台幣成本<span style="font-size:10px;margin-left:4px">（市場匯率）</span></span>
+        <span style="font-size:16px;font-weight:500">${ntd(costNT)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 10px;background:var(--surface);border-radius:var(--rs);margin:8px 0;border:1px solid var(--border2)">
+        <span style="font-size:13px;font-weight:600">建議售價</span>
+        <span style="font-size:26px;font-weight:700">${ntd(sellNT)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 0">
+        <span style="font-size:12px;color:var(--text2)">代購毛利</span>
+        <div><span style="font-size:18px;font-weight:600;color:${pc}">${ntd(profit)}</span><span style="font-size:12px;color:${pc};margin-left:6px">${margin.toFixed(1)}%</span></div>
+      </div>
+    </div>`;
+  saveArea.style.display='block';
+}
+
+function qpSave(){
+  if(!_qpLast)return;
+  S.qpHistory.unshift({..._qpLast,id:Date.now()});
+  sv();renderQpHist();
+  // 給儲存按鈕視覺回饋
+  const btn=document.querySelector('#qp-save-area button');
+  const orig=btn.textContent;
+  btn.textContent='已儲存';btn.disabled=true;
+  setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},1500);
+}
+
+function qpDelHist(id){
+  cfm('確定刪除此試算紀錄？',()=>{S.qpHistory=S.qpHistory.filter(h=>h.id!==id);sv();renderQpHist();});
+}
+
+function renderQpHist(){
+  const list=document.getElementById('qp-hist-list');
+  const cnt=document.getElementById('qp-hist-count');
+  if(cnt)cnt.textContent=S.qpHistory.length?S.qpHistory.length+' 筆':'';
+  if(!list)return;
+  if(!S.qpHistory.length){
+    list.innerHTML='<div class="empty">尚無試算紀錄，計算後按「儲存」即可新增</div>';return;
+  }
+  list.innerHTML=S.qpHistory.map(h=>{
+    const pc=h.profit>=0?'var(--ok)':'var(--danger)';
+    return `<div class="hist-card">
+      <div class="hist-name">${h.pname}</div>
+      <div class="hist-price">${ntd(h.sellNT)}</div>
+      <div class="hist-meta">
+        <span>成本 ${ntd(h.costNT)}</span>
+        <span style="color:${pc};font-weight:500">毛利 ${ntd(h.profit)} (${h.margin.toFixed(1)}%)</span>
+        <span>原價 ${jpy(h.jpyAmt)}</span>
+      </div>
+      <div class="hist-meta">
+        <span>匯率 ${h.rate.toFixed(4)}</span>
+        <span>${h.taxDesc}</span>
+        <span>${h.feeDesc}</span>
+        <span style="margin-left:auto">${h.ts}</span>
+      </div>
+      <div class="hist-del" style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-p" onclick="openPoFromQp(${h.id})">＋ 開預購單</button>
+        <button class="btn btn-sm btn-d" onclick="qpDelHist(${h.id})">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openPoFromQp(histId){
+  const h=S.qpHistory.find(x=>x.id===histId);
+  if(!h)return;
+  document.getElementById('qp-po-wrap').style.display='block';
+  // 帶入歷史紀錄的品名與金額，不綁定商品管理的 pid
+  openQpPoM({pname:h.pname,sellNT:h.sellNT,jpyTaxed:h.jpyTaxed,fromHist:true});
+}
+
+function toggleQpPo(){
+  const w=document.getElementById('qp-po-wrap');
+  w.style.display=w.style.display==='none'?'block':'none';
+  if(w.style.display==='block')renderQpPoList();
+}
+
+/* ── 連線預購單專用 modal 操作（獨立，不動 S.preorders）── */
+let _qpPoEdit=null; // 編輯中的 qpOrder id
+function openQpPoM(prefill){
+  _qpPoEdit=null;
+  // 若來自歷史紀錄，品項用品名文字（pid='' 表示自訂）
+  if(prefill?.fromHist){
+    S.poI=[{pid:'',v:'',qty:1,pt:prefill.sellNT||0,pj:prefill.jpyTaxed||0,customName:prefill.pname||''}];
+  } else {
+    S.poI=[{pid:'',v:'',qty:1,pt:prefill?.sellNT||0,pj:prefill?.jpyTaxed||0}];
+  }
+  ['po-name','po-phone','po-store','po-note','po-dt','po-dj','po-cid','po-channel-other','po-address','po-freight'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('po-pickup').value='self';
+  document.getElementById('po-sg').style.display='none';
+  document.getElementById('po-addr-wrap').style.display='none';
+  document.getElementById('po-freight-wrap').style.display='none';
+  document.getElementById('po-total-bar').style.display='none';
+  document.getElementById('po-channel').value='IG';
+  document.getElementById('po-channel-other-wrap').style.display='none';
+  document.querySelector('#m-po .mt').textContent='新增連線預購單';
+  document.querySelector('#m-po .mf .btn-p').textContent='建立';
+  document.getElementById('m-po').dataset.mode='qp';
+  renderPoItems();poCalcTotal();om('m-po');
+}
+function editQpPo(id){
+  const o=S.qpOrders.find(x=>x.id===id);if(!o)return;
+  _qpPoEdit=id;
+  S.poI=o.items.map(i=>({...i}));
+  document.getElementById('po-name').value=o.name||'';
+  document.getElementById('po-phone').value=o.phone||'';
+  const chVal=['IG','Threads','Line','FB'].includes(o.channel)?o.channel:'other';
+  document.getElementById('po-channel').value=chVal;
+  document.getElementById('po-channel-other-wrap').style.display=chVal==='other'?'flex':'none';
+  if(chVal==='other')document.getElementById('po-channel-other').value=o.channel||'';
+  document.getElementById('po-cid').value=o.cid||'';
+  document.getElementById('po-pickup').value=o.pickup||'self';
+  const qpv=o.pickup||'self';
+  document.getElementById('po-sg').style.display=qpv==='store'?'flex':'none';
+  document.getElementById('po-addr-wrap').style.display=qpv==='delivery'?'block':'none';
+  document.getElementById('po-freight-wrap').style.display=(qpv==='store'||qpv==='delivery')?'block':'none';
+  document.getElementById('po-store').value=o.store||'';
+  document.getElementById('po-address').value=o.address||'';
+  document.getElementById('po-freight').value=o.freight||'';
+  document.getElementById('po-dt').value=o.dt||'';
+  document.getElementById('po-dj').value=o.dj||'';
+  document.getElementById('po-note').value=o.note||'';
+  document.querySelector('#m-po .mt').textContent='編輯連線預購單';
+  document.querySelector('#m-po .mf .btn-p').textContent='儲存修改';
+  document.getElementById('m-po').dataset.mode='qp';
+  renderPoItems();poCalcTotal();om('m-po');
+}
+function saveQpPo(){
+  const name=document.getElementById('po-name').value.trim();if(!name){alert('請輸入客戶姓名');return;}
+  const valid=S.poI.filter(i=>i.pid||i.customName);if(!valid.length){alert('請新增商品');return;}
+  const chVal=document.getElementById('po-channel').value;
+  const channel=chVal==='other'?(document.getElementById('po-channel-other').value.trim()||'其他'):chVal;
+  // [FIX 3] 使用 Number() 並搭配 ||0 確保 NaN/undefined 均轉為 0
+  const base={name,phone:document.getElementById('po-phone').value.trim(),
+    channel,cid:document.getElementById('po-cid').value.trim(),
+    pickup:document.getElementById('po-pickup').value,store:document.getElementById('po-store').value.trim(),
+    address:document.getElementById('po-address').value.trim(),
+    freight:Number(parseFloat(document.getElementById('po-freight').value))||0,
+    dj:Number(parseFloat(document.getElementById('po-dj').value))||0,
+    dt:Number(parseFloat(document.getElementById('po-dt').value))||0,
+    items:valid.map(i=>({...i,pid:i.pid?parseInt(i.pid):0,qty:parseInt(i.qty)||1})),
+    note:document.getElementById('po-note').value.trim()};
+  if(_qpPoEdit){
+    const idx=S.qpOrders.findIndex(x=>x.id===_qpPoEdit);
+    if(idx>=0)S.qpOrders[idx]={...S.qpOrders[idx],...base};
+    _qpPoEdit=null;
+  } else {
+    const oid='QP-'+String(S.nQpoid).padStart(3,'0');
+    S.qpOrders.push({id:S.nQpoid++,oid,...base,status:'pending',date:td()});
+  }
+  document.getElementById('m-po').dataset.mode='';
+  document.querySelector('#m-po .mt').textContent='新增預購單';
+  document.querySelector('#m-po .mf .btn-p').textContent='建立';
+  sv();cm('m-po');renderQpPoList();
+}
+function delQpPo(id){cfm('確定刪除此連線預購單？',()=>{S.qpOrders=S.qpOrders.filter(o=>o.id!==id);sv();renderQpPoList();});}
+function updQpPoSt(id,s){const o=S.qpOrders.find(x=>x.id===id);if(o){o.status=s;sv();renderQpPoList();}}
+function qpPoToSale(id){
+  const o=S.qpOrders.find(x=>x.id===id);if(!o)return;
+  const realItems=o.items.filter(i=>i.pid&&gp(i.pid));
+  const short=checkStock(realItems.map(i=>({pid:i.pid,v:i.v||'',qty:i.qty||1})));
+  const doTransfer=()=>{
+    const sid='S-'+String(S.nSid).padStart(3,'0');
+    o.items.forEach((item,idx)=>{
+      const realProd=item.pid&&gp(item.pid)?gp(item.pid):null;
+      const baseName=realProd?realProd.name:(item.customName||'商品');
+      const displayName='(連線商品)'+baseName;
+      S.sales.push({
+        id:S.nSid++,sid,cust:o.name,
+        pid:realProd?realProd.id:0,
+        v:item.v||'',qty:parseInt(item.qty)||1,
+        pt:item.pt||0,pj:item.pj||0,
+        ct:realProd?getWeightedAvgCost(realProd.id):0,
+        cj:realProd?realProd.cjp||0:0,
+        freight:idx===0?(o.freight||0):0,
+        customProdName:displayName,
+        poid:null,date:td()
+      });
+      if(realProd)realProd.stock=Math.max(0,realProd.stock-(parseInt(item.qty)||1));
+    });
+    // 轉銷貨後刪除此連線預購單（與預購單批次轉銷貨行為一致）
+    S.qpOrders=S.qpOrders.filter(x=>x.id!==id);
+    sv();renderQpPoList();renderSa();renderInv();
+    alert(`已成功轉入銷售紀錄！單號 ${sid}`);
+  };
+  if(short.length){
+    cfm('⚠️ '+stockWarnMsg(short),doTransfer,'仍要轉入','btn-d');
+  } else {
+    cfm(`確定將「${o.name}」的連線預購單轉入銷售紀錄？`,doTransfer,'轉入銷貨','btn-p');
+  }
+}
+
+function renderQpPoList(){
+  const el=document.getElementById('qp-po-list');
+  const badge=document.getElementById('qp-po-badge');
+  if(!el)return;
+  const stL={pending:'待採購',payment:'待匯款',purchased:'已採購',arrived:'已到貨',shipped:'已出貨'};
+  const stC={pending:'wn',payment:'dd',purchased:'bl',arrived:'pp',shipped:'ok'};
+  if(badge)badge.textContent=S.qpOrders.length?S.qpOrders.length+' 筆':'';
+  if(!S.qpOrders.length){el.innerHTML='<div class="empty">尚無連線預購單</div>';return;}
+  el.innerHTML=S.qpOrders.slice().reverse().map(o=>{
+    const itemTotal=o.items.reduce((a,i)=>a+i.qty*(i.pt||0),0);
+    const freight=o.freight||0;
+    const total=itemTotal+freight;
+    const summary=o.items.slice(0,2).map(i=>{
+      const name=i.customName||(i.pid&&gp(i.pid)?gp(i.pid).name:'?');
+      return name+(i.v?' ('+i.v+')':'')+' ×'+i.qty;
+    }).join('、')+(o.items.length>2?' ...':'');
+    const qpPickupLabel=o.pickup==='store'?'店到店 '+o.store:o.pickup==='delivery'?'宅配 '+(o.address||''):'自取';
+    return `<div class="hist-card">
+      <div class="hist-name" style="padding-right:8px">${o.oid} · ${o.name}${o.cid?' (@'+o.cid+')':''}</div>
+      <div class="hist-price" style="font-size:16px">${ntd(total)}${freight>0?` <span style="font-size:11px;color:var(--text3);font-weight:400">（含運費 ${ntd(freight)}）</span>`:''}</div>
+      <div class="hist-meta"><span>${summary}</span></div>
+      <div class="hist-meta">
+        ${o.channel?`<span class="pill nn" style="font-size:10px;padding:1px 6px">${o.channel}</span>`:''}
+        <span>${o.phone||''}</span>
+        <span>${qpPickupLabel}</span>
+        <span style="margin-left:auto">${o.date}</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">
+        <select onchange="updQpPoSt(${o.id},this.value)" style="font-size:11px;padding:3px 6px;width:auto">
+          ${Object.entries(stL).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+        <span class="pill ${stC[o.status]}">${stL[o.status]}</span>
+        <button class="btn btn-sm" onclick="editQpPo(${o.id})">編輯</button>
+        <button class="btn btn-sm btn-p" onclick="qpPoToSale(${o.id})">→ 轉銷貨</button>
+        <button class="btn btn-sm btn-d" onclick="delQpPo(${o.id})">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+PGS.forEach(p=>{if(!S.df[p])S.df[p]={from:'',to:''};});
+updateRate();makeDf('dash');renderDash();renderQpHist();
+
+// ── 匯出 Excel ────────────────────────────────────
+function exportExcel() {
+  if (typeof XLSX === 'undefined') { alert('Excel 套件載入中，請稍後再試'); return; }
+  const wb = XLSX.utils.book_new();
+  const stL = {pending:'待採購',payment:'待匯款',purchased:'已採購',arrived:'已到貨',shipped:'已出貨'};
+
+  // ① 銷售紀錄
+  const saRows = S.sales.map(s => {
+    const p = gp(s.pid);
+    return {
+      '單號': s.sid, '日期': s.date, '客戶': s.cust||'散客',
+      '管道': s.channel||'', '商品': s.customProdName||(p?p.name:'已刪除'),
+      '規格': s.v||'', '數量': s.qty,
+      '售價(NT)': s.pt, '小計(NT)': s.pt*s.qty,
+      '運費(NT)': s.freight||0, '成本(NT)': s.ct,
+      '毛利(NT)': (s.pt-s.ct)*s.qty, '備註': s.note||''
+    };
+  });
+  if (saRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(saRows), '銷售紀錄');
+  }
+
+  // ② 進貨紀錄
+  const puRows = [];
+  S.purchases.forEach(pu => {
+    pu.items.forEach((item, idx) => {
+      const p = gp(item.pid);
+      const allocNT = item.allocNT != null ? item.allocNT : j2t(item.alloc||0);
+      puRows.push({
+        '批次': pu.batch, '日期': pu.date,
+        '商品': p ? p.name : '已刪除', '規格': item.v||'',
+        '數量': item.qty,
+        '單件成本(NT)': item.ctw||j2t(item.cjp||0),
+        '運費攤提(NT)': Math.round(allocNT),
+        '攤提後成本(NT)': Math.round((item.ctw||j2t(item.cjp||0))+allocNT),
+        '批次運費(NT)': idx===0?(pu.st||0):'',
+        '備註': idx===0?(pu.note||''):''
+      });
+    });
+  });
+  if (puRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(puRows), '進貨紀錄');
+  }
+
+  // ③ 預購單
+  const poRows = [];
+  S.preorders.forEach(o => {
+    o.items.forEach((item, idx) => {
+      const p = gp(item.pid);
+      poRows.push({
+        '單號': o.oid, '日期': o.date, '客戶': o.name,
+        '電話': o.phone||'', '管道': o.channel||'',
+        '狀態': stL[o.status]||o.status,
+        '商品': p?p.name:(item.customName||'?'),
+        '規格': item.v||'', '數量': item.qty,
+        '單價(NT)': item.pt||0,
+        '小計(NT)': (item.qty||1)*(item.pt||0),
+        '運費(NT)': idx===0?(o.freight||0):'',
+        '訂金(NT)': idx===0?(o.dt||0):'',
+        '取件方式': o.pickup==='store'?'店到店':o.pickup==='delivery'?'宅配':'自取',
+        '備註': idx===0?(o.note||''):''
+      });
+    });
+  });
+  if (poRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(poRows), '預購單');
+  }
+
+  // ④ 庫存現況
+  const invRows = S.products.map(p => {
+    const avgCost = getWeightedAvgCost(p.id);
+    const sellNT = p.ptw || j2t(p.pjp);
+    return {
+      '商品名稱': p.name, '日文品名': p.jp||'',
+      '庫存數': p.stock, '低庫存門檻': p.min||2,
+      '進價(NT)': p.ctw||j2t(p.cjp||0), '進價(¥)': p.cjp||0,
+      '售價(NT)': sellNT, '售價(¥)': p.pjp||0,
+      '加權平均成本(NT)': avgCost,
+      '壓貨成本(NT)': Math.round(p.stock * avgCost),
+      '預估售出回收(NT)': Math.round(p.stock * sellNT),
+      '潛在毛利(NT)': Math.round(p.stock * (sellNT - avgCost)),
+      '規格': (p.vars||[]).join('、'), '備註': p.note||''
+    };
+  });
+  if (invRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(invRows), '庫存現況');
+  }
+
+  // ⑤ 快速訂價紀錄
+  const qpRows = S.qpHistory.map(h => ({
+    '時間': h.ts, '品名': h.pname,
+    '日幣原價(¥)': h.jpyAmt, '含稅日幣(¥)': h.jpyTaxed,
+    '台幣成本(NT)': h.costNT, '建議售價(NT)': h.sellNT,
+    '毛利(NT)': h.profit, '毛利率(%)': h.margin.toFixed(1),
+    '稅金說明': h.taxDesc, '費率說明': h.feeDesc,
+    '使用匯率': h.rate
+  }));
+  if (qpRows.length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(qpRows), '快速訂價紀錄');
+  }
+
+  if (wb.SheetNames.length === 0) {
+    alert('目前沒有任何資料可以匯出');
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `代購帳_${today}.xlsx`);
+}
+
+// ── 啟動 Firebase ────────────────────────────────
+initFirebase();
+</script>
