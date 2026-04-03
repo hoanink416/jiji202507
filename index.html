@@ -264,6 +264,14 @@ input:disabled{opacity:.4;background:var(--bg3)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 #fb-setup-banner{background:var(--wbg);border:1px solid #F0D080;border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:var(--warn);display:none}
 #fb-setup-banner b{font-weight:700}
+/* ── Status-colored selects ── */
+.st-sel{border-radius:999px!important;font-weight:600!important;cursor:pointer}
+.st-sel.s-wn{background:var(--wbg)!important;color:var(--warn)!important;border-color:#F0D080!important}
+.st-sel.s-dd{background:var(--dbg)!important;color:var(--danger)!important;border-color:#F5B7B1!important}
+.st-sel.s-bl{background:#EBF5FB!important;color:#1B6A8A!important;border-color:#A9D4EC!important}
+.st-sel.s-pp{background:#F5EEF8!important;color:#6C3483!important;border-color:#D7B8E8!important}
+.st-sel.s-ok{background:var(--obg)!important;color:var(--ok)!important;border-color:#A3D9B0!important}
+
 /* ── Export button ── */
 .nb-export{color:var(--ok)!important}
 /* ── Desktop overrides ── */
@@ -287,6 +295,20 @@ input:disabled{opacity:.4;background:var(--bg3)}
 }
 </style>
 
+<!-- 密碼進入視窗 -->
+<div id="pw-wall" style="display:flex;position:fixed;inset:0;z-index:9999;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:32px">
+  <div style="font-size:22px;font-weight:700;letter-spacing:.02em;color:var(--text)">吉吉選物</div>
+  <div style="font-size:13px;color:var(--text3);margin-top:-12px">請輸入密碼以進入</div>
+  <div style="background:var(--surface);border-radius:var(--r);padding:28px 24px;width:100%;max-width:320px;box-shadow:0 4px 24px rgba(0,0,0,.1)">
+    <div class="fg" style="margin-bottom:14px">
+      <div class="fl">密碼</div>
+      <input type="password" id="pw-inp" placeholder="請輸入密碼" style="font-size:20px;letter-spacing:.2em;text-align:center" onkeydown="if(event.key==='Enter')checkPw()">
+    </div>
+    <div id="pw-err" style="color:var(--danger);font-size:12px;text-align:center;margin-bottom:10px;display:none">密碼錯誤，請再試一次</div>
+    <button class="btn btn-p" style="width:100%;padding:13px;font-size:14px" onclick="checkPw()">進入</button>
+  </div>
+</div>
+
 <!-- 自訂確認框 -->
 <div id="cfm-wrap">
   <div id="cfm-box">
@@ -308,14 +330,14 @@ input:disabled{opacity:.4;background:var(--bg3)}
   <button id="sb-tog" onclick="toggleSb()" aria-label="選單">
     <span></span><span></span><span></span>
   </button>
-  <div id="top-logo">代購帳 <span style="font-size:10px;font-weight:400;opacity:.5">v28</span></div>
+  <div id="top-logo">吉吉選物 <span style="font-size:10px;font-weight:400;opacity:.5">v28</span></div>
   <button id="top-rate" onclick="openRM()">¥-- NT</button>
 </div>
 
 <!-- Sidebar (drawer on mobile, fixed on desktop) -->
 <div id="sb">
   <div class="sb-head">
-    <span class="sb-logo">代購帳 <span style="font-size:10px;font-weight:400;opacity:.5">v29</span></span>
+    <span class="sb-logo">吉吉選物 <span style="font-size:10px;font-weight:400;opacity:.5">v29</span></span>
     <button class="sb-close" onclick="closeSb()">×</button>
   </div>
   <nav class="sb-nav">
@@ -327,7 +349,8 @@ input:disabled{opacity:.4;background:var(--bg3)}
     <button class="nb" onclick="showPage('sa')"><span class="nb-f">銷售紀錄</span></button>
     <button class="nb" onclick="showPage('rep')"><span class="nb-f">報表</span></button>
     <button class="nb" onclick="showPage('qp')"><span class="nb-f">快速訂價</span></button>
-    <button class="nb nb-export" onclick="exportExcel();closeSb()"><span class="nb-f">⬇ 匯出 Excel</span></button>
+    <button class="nb" onclick="showPage('exp')"><span class="nb-f">其他支出</span></button>
+    <button class="nb nb-export" onclick="om('m-export');closeSb()"><span class="nb-f">⬇ 匯出 Excel</span></button>
   </nav>
   <div id="sync-bar" title="雲端同步狀態">
     <span id="sync-dot"></span>
@@ -336,6 +359,9 @@ input:disabled{opacity:.4;background:var(--bg3)}
   <div class="sb-bot" onclick="openRM()">
     <div class="sb-rl">目前匯率</div>
     <div class="sb-rv" id="rate-disp">¥1 = -- NT</div>
+  </div>
+  <div style="padding:8px 16px;border-top:1px solid var(--border)">
+    <button onclick="openArchive()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text3);font-family:inherit;padding:4px 0;width:100%;text-align:left;opacity:.5;letter-spacing:.03em">⚙ 系統維護</button>
   </div>
 </div>
 
@@ -355,6 +381,9 @@ input:disabled{opacity:.4;background:var(--bg3)}
   <div class="ph"><div class="pt">庫存管理</div></div>
   <div id="df-inv"></div>
   <div class="cf-card" id="inv-cf"></div>
+  <div class="fbar" style="margin-bottom:10px">
+    <select id="inv-cat-f" onchange="renderInv()" style="width:auto;font-size:13px"><option value="">全部類別</option></select>
+  </div>
   <div class="card" style="padding-bottom:0">
     <div class="ct" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       <span>各商品庫存</span>
@@ -370,17 +399,23 @@ input:disabled{opacity:.4;background:var(--bg3)}
 </div>
 
 <div class="page" id="page-prod">
-  <div class="ph"><div class="pt">商品管理</div><button class="btn btn-p btn-sm" onclick="openPM()">＋ 新增</button></div>
+  <div class="ph"><div class="pt">商品管理</div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="openCatM()">🏷 類別管理</button>
+      <button class="btn btn-p btn-sm" onclick="openPM()">＋ 新增</button>
+    </div>
+  </div>
   <div id="df-prod"></div>
   <div class="fbar">
     <input type="text" id="p-s" placeholder="搜尋商品…" oninput="renderProd()">
+    <select id="p-cat-f" onchange="renderProd()" style="width:auto;font-size:13px"><option value="">全部類別</option></select>
     <button class="btn btn-sm dp" onclick="setProdSort('stock','desc')" id="prod-ss-dd">庫存↓</button>
     <button class="btn btn-sm dp" onclick="setProdSort('stock','asc')" id="prod-ss-aa">庫存↑</button>
     <button class="btn btn-sm dp" onclick="setProdSort('price','desc')" id="prod-sp-dd">售價↓</button>
     <button class="btn btn-sm dp" onclick="setProdSort('price','asc')" id="prod-sp-aa">售價↑</button>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table>
-    <thead><tr><th style="width:8%"></th><th style="width:24%">商品</th><th style="width:16%">進價NT/¥</th><th style="width:16%">售價NT/¥</th><th style="width:14%">規格</th><th style="width:9%">庫存</th><th style="width:5%">門檻</th><th style="width:8%"></th></tr></thead>
+    <thead><tr><th style="width:7%"></th><th style="width:22%">商品</th><th style="width:14%">進價NT/¥</th><th style="width:14%">售價NT/¥</th><th style="width:12%">規格</th><th style="width:8%">庫存</th><th style="width:5%">門檻</th><th style="width:18%;min-width:110px"></th></tr></thead>
     <tbody id="prod-tb"></tbody>
   </table></div></div>
 </div>
@@ -408,6 +443,9 @@ input:disabled{opacity:.4;background:var(--bg3)}
 <div class="page" id="page-pu">
   <div class="ph"><div class="pt">進貨紀錄</div><button class="btn btn-p btn-sm" onclick="openPuM()">＋ 新增</button></div>
   <div id="df-pu"></div>
+  <div class="fbar">
+    <input type="text" id="pu-s" placeholder="搜尋批次或商品…" oninput="renderPu()">
+  </div>
   <div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table>
     <thead><tr><th style="width:13%">批次</th><th style="width:17%">商品</th><th style="width:9%">規格</th><th style="width:6%">量</th><th style="width:16%">成本NT/¥</th><th style="width:16%">攤運後單價</th><th style="width:9%">日期</th><th style="width:14%"></th></tr></thead>
     <tbody id="pu-tb"></tbody>
@@ -417,6 +455,14 @@ input:disabled{opacity:.4;background:var(--bg3)}
 <div class="page" id="page-sa">
   <div class="ph"><div class="pt">銷售紀錄</div><button class="btn btn-p btn-sm" onclick="openSaM()">＋ 新增</button></div>
   <div id="df-sa"></div>
+  <div class="fbar">
+    <input type="text" id="sa-s" placeholder="搜尋客戶姓名或@帳號…" oninput="renderSa()">
+    <select id="sa-ch" onchange="renderSa()" style="width:auto;font-size:13px">
+      <option value="">全部管道</option>
+      <option value="IG">IG</option><option value="Threads">Threads</option>
+      <option value="Line">Line</option><option value="FB">FB</option>
+    </select>
+  </div>
   <div id="sa-list"></div>
 </div>
 
@@ -514,8 +560,97 @@ input:disabled{opacity:.4;background:var(--bg3)}
   </div>
 </div>
 
+<!-- 其他支出頁面 -->
+<div class="page" id="page-exp">
+  <div class="ph">
+    <div class="pt">其他支出</div>
+    <button class="btn btn-p btn-sm" onclick="addExpRow()">＋ 新增</button>
+  </div>
+  <div class="df-bar" style="margin-bottom:10px">
+    <label>期間</label>
+    <input type="date" id="exp-from" onchange="renderExp()" style="max-width:128px">
+    <span style="font-size:11px;color:var(--text3)">—</span>
+    <input type="date" id="exp-to" onchange="renderExp()" style="max-width:128px">
+    <div class="dfp">
+      <button class="dp exp-dp on" data-key="all" onclick="setExpP('','','all')">全部</button>
+      <button class="dp exp-dp" data-key="month" onclick="setExpP(mst(),td(),'month')">本月</button>
+      <button class="dp exp-dp" data-key="year" onclick="setExpP(yst(),td(),'year')">今年</button>
+      <button class="dp exp-dp" data-key="30d" onclick="setExpP(ago(30),td(),'30d')">近30天</button>
+    </div>
+  </div>
+  <div class="srow" style="margin-bottom:14px" id="exp-stats"></div>
+  <div id="exp-list"></div>
+</div>
+
 </div></div>
 
+</div>
+
+<!-- 系統維護 modal -->
+<div class="mw" id="m-archive">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mh"><div class="mt">⚙ 系統維護</div><button class="mx" onclick="cm('m-archive')">×</button></div>
+    <div style="background:var(--dbg);border:1px solid #F5B7B1;border-radius:var(--rs);padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--danger);line-height:1.7">
+      ⚠️ <b>警告：此操作不可還原。</b><br>清除後，1 年前的銷售紀錄將永久刪除，Firebase 與本機備份同步清除。請確認已備份（匯出 Excel）再執行。
+    </div>
+    <div id="arch-step1">
+      <div class="fg" style="margin-bottom:14px">
+        <div class="fl">請輸入登入密碼以解鎖操作</div>
+        <input type="password" id="arch-pw" placeholder="輸入密碼" style="font-size:18px;letter-spacing:.15em;text-align:center" onkeydown="if(event.key==='Enter')archVerifyPw()">
+      </div>
+      <div id="arch-pw-err" style="color:var(--danger);font-size:12px;text-align:center;margin-bottom:10px;display:none">密碼錯誤</div>
+      <div class="mf"><button class="btn" onclick="cm('m-archive')">取消</button><button class="btn btn-d" onclick="archVerifyPw()">驗證密碼</button></div>
+    </div>
+    <div id="arch-step2" style="display:none">
+      <div id="arch-summary" style="background:var(--bg2);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.8"></div>
+      <div class="mf"><button class="btn" onclick="closeArchive()">取消</button><button class="btn btn-d" onclick="doArchive()" id="arch-confirm-btn">確認清除</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 匯出 Excel modal -->
+<div class="mw" id="m-export">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mh"><div class="mt">匯出 Excel</div><button class="mx" onclick="cm('m-export')">×</button></div>
+    <div class="dv">時間範圍（留空表示全部）</div>
+    <div class="frow f2" style="margin-bottom:10px">
+      <div class="fg"><div class="fl">開始日期</div><input type="date" id="ex-from"></div>
+      <div class="fg"><div class="fl">結束日期</div><input type="date" id="ex-to"></div>
+    </div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="dp btn-sm" onclick="setExP('','')">全部</button>
+      <button class="dp btn-sm" onclick="setExP(mst(),td())">本月</button>
+      <button class="dp btn-sm" onclick="setExP(yst(),td())">今年</button>
+      <button class="dp btn-sm" onclick="setExP(ago(30),td())">近30天</button>
+    </div>
+    <div class="dv">選擇匯出工作表</div>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ex-sa" checked> 銷售紀錄</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ex-pu" checked> 進貨紀錄</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ex-po" checked> 預購單</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ex-qp-po" checked> 連線預購單</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ex-inv" checked> 庫存現況</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ex-qph" checked> 快速訂價紀錄</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ex-exp" checked> 其他支出</label>
+    </div>
+    <div class="mf"><button class="btn" onclick="cm('m-export')">取消</button><button class="btn btn-p" onclick="doExportExcel()">⬇ 匯出</button></div>
+  </div>
+</div>
+
+<!-- 商品類別管理 modal -->
+<div class="mw" id="m-cat">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mh"><div class="mt">商品類別管理</div><button class="mx" onclick="cm('m-cat')">×</button></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="cat-inp" placeholder="新類別名稱，例：食品、家居" style="flex:1;font-size:16px" onkeydown="if(event.key==='Enter')addCat()">
+      <button class="btn btn-p btn-sm" onclick="addCat()" style="white-space:nowrap">＋ 新增</button>
+    </div>
+    <div id="cat-list" style="min-height:40px;margin-bottom:8px"></div>
+    <div class="mf"><button class="btn btn-p" onclick="cm('m-cat')">完成</button></div>
+  </div>
 </div>
 
 <!-- 匯率 modal -->
@@ -539,6 +674,10 @@ input:disabled{opacity:.4;background:var(--bg3)}
       <div class="fg"><div class="fl">商品名稱</div><input id="mp-name" placeholder="牛頭犬收納盒"></div>
       <div class="fg"><div class="fl">日文品名</div><input id="mp-jp" placeholder="ブルドッグ収納箱"></div>
     </div>
+    <div class="fg" style="margin-bottom:10px">
+      <div class="fl">商品類別</div>
+      <select id="mp-cat"><option value="">（未分類）</option></select>
+    </div>
     <div class="dv">進價</div>
     <div class="frow f2">
       <div class="fg"><div class="fl">進價（NT）主要</div><input type="number" id="mp-ctw" placeholder="0" oninput="sf('mp-ctw','mp-cjp')"></div>
@@ -559,15 +698,6 @@ input:disabled{opacity:.4;background:var(--bg3)}
       <div class="tag-list" id="mp-vt"></div>
     </div>
     <div class="fg" style="margin-bottom:8px"><div class="fl">備註</div><textarea id="mp-note" rows="2"></textarea></div>
-    <div class="fg" style="margin-bottom:8px">
-      <div class="fl">商品圖片</div>
-      <div class="img-upload" id="mp-img-wrap" onclick="document.getElementById('mp-img-file').click()">
-        <input type="file" id="mp-img-file" accept="image/*" style="display:none" onchange="handleProdImg(event)">
-        <img id="mp-img-preview" class="img-preview" style="display:none">
-        <div class="img-upload-label" id="mp-img-label">點此上傳圖片（JPG、PNG、WEBP）</div>
-        <button type="button" id="mp-img-clear" onclick="clearProdImg(event)" style="display:none;margin-top:8px;font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer;font-family:inherit;letter-spacing:.02em">移除圖片</button>
-      </div>
-    </div>
     <div class="mf"><button class="btn" onclick="cm('m-prod')">取消</button><button class="btn btn-p" onclick="saveProd()">儲存</button></div>
   </div>
 </div>
@@ -602,7 +732,7 @@ input:disabled{opacity:.4;background:var(--bg3)}
           <option value="self">自取</option><option value="store">店到店</option><option value="delivery">宅配</option>
         </select>
       </div>
-      <div class="fg" id="po-sg" style="display:none"><div class="fl">寄送門市</div><input id="po-store" placeholder="全家 台北信義門市"></div>
+      <div class="fg" id="po-sg" style="display:none"><div class="fl">寄送門市</div><input id="po-store" placeholder="711 天山門市"></div>
     </div>
     <div class="fg" id="po-addr-wrap" style="display:none;margin-bottom:8px"><div class="fl">收件地址</div><input id="po-address" placeholder="請輸入收件地址"></div>
     <div class="fg" id="po-freight-wrap" style="display:none;margin-bottom:8px"><div class="fl">運費（NT）</div><input type="number" id="po-freight" placeholder="0" oninput="poCalcTotal()"></div>
@@ -612,8 +742,8 @@ input:disabled{opacity:.4;background:var(--bg3)}
     <div id="po-total-bar" style="display:none;background:var(--bg2);border-radius:var(--rs);padding:8px 10px;margin-top:8px;font-size:12px;color:var(--text2)"></div>
     <div class="dv">金額</div>
     <div class="frow f2">
-      <div class="fg"><div class="fl">訂金（NT）</div><input type="number" id="po-dt" placeholder="0" oninput="sf('po-dt','po-dj')"></div>
-      <div class="fg"><div class="fl">訂金（¥）</div><input type="number" id="po-dj" placeholder="0" oninput="sf('po-dj','po-dt')"></div>
+      <div class="fg"><div class="fl">金額（NT）</div><input type="number" id="po-dt" placeholder="0" oninput="sf('po-dt','po-dj')"></div>
+      <div class="fg"><div class="fl">金額（¥）</div><input type="number" id="po-dj" placeholder="0" oninput="sf('po-dj','po-dt')"></div>
     </div>
     <div class="fg" style="margin-top:10px"><div class="fl">備註</div><textarea id="po-note" rows="2"></textarea></div>
     <div class="mf"><button class="btn" onclick="S.eqpoid=null;_qpPoEdit=null;document.getElementById('m-po').dataset.mode='';document.querySelector('#m-po .mt').textContent='新增預購單';document.querySelector('#m-po .mf .btn-p').textContent='建立';cm('m-po')">取消</button><button class="btn btn-p" onclick="savePo()">建立</button></div>
@@ -688,6 +818,22 @@ input:disabled{opacity:.4;background:var(--bg3)}
 </div>
 
 <script>
+/* ── 密碼進入 ── */
+function checkPw(){
+  const v=document.getElementById('pw-inp').value;
+  if(v==='0417'){
+    document.getElementById('pw-wall').style.display='none';
+  } else {
+    document.getElementById('pw-err').style.display='block';
+    document.getElementById('pw-inp').value='';
+    document.getElementById('pw-inp').focus();
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  // 自動聚焦密碼欄
+  const pi=document.getElementById('pw-inp');if(pi)pi.focus();
+});
+
 /* ── 自訂確認框（取代 confirm()，避免 iframe 封鎖）── */
 let _cfmCb=null;
 function cfm(msg,cb,yesLabel,yesClass){
@@ -722,7 +868,9 @@ let S={
   ],
   qpHistory:[],
   qpOrders:[],   // 連線預購單獨立資料庫，與主預購單(preorders)完全分開
-  nPid:4,nPoid:3,nPuid:2,nSid:3,nQpoid:1,
+  categories:[], // 商品類別
+  expenses:[],   // 其他支出
+  nPid:4,nPoid:3,nPuid:2,nSid:3,nQpoid:1,nExpid:1,
   epid:null,eqpoid:null,tvars:[],puI:[],poI:[],df:{}
 };
 // ══════════════════════════════════════════════════
@@ -779,6 +927,9 @@ function initFirebase() {
         if (!S.qpHistory) S.qpHistory = [];
         if (!S.qpOrders) S.qpOrders = [];
         if (!S.nQpoid) S.nQpoid = 1;
+        if (!S.categories) S.categories = [];
+        if (!S.expenses) S.expenses = [];
+        if (!S.nExpid) S.nExpid = 1;
         // 更新所有畫面
         updateRate();
         const active = document.querySelector('.page.active');
@@ -834,6 +985,9 @@ function ld() {
       if (!S.qpHistory) S.qpHistory = [];
       if (!S.qpOrders) S.qpOrders = [];
       if (!S.nQpoid) S.nQpoid = 1;
+      if (!S.categories) S.categories = [];
+      if (!S.expenses) S.expenses = [];
+      if (!S.nExpid) S.nExpid = 1;
     }
   } catch(e) {}
 }
@@ -850,6 +1004,9 @@ const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return d.toISOString()
 const mst=()=>{const d=new Date();d.setDate(1);return d.toISOString().split('T')[0];};
 const yst=()=>new Date().getFullYear()+'-01-01';
 const now=()=>{const d=new Date();return d.toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'})+' '+d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});};
+// 全域唯一 id 產生器（避免 Date.now() 毫秒精度重複）
+let _uid=Date.now();
+const uid=()=>++_uid;;
 
 // 排序狀態
 let _invSort={field:'',dir:''};
@@ -869,9 +1026,10 @@ function setProdSort(field,dir){
   const k=map[field+'_'+dir];if(k){const el=document.getElementById(k);if(el)el.classList.add('on');}
   renderProd();
 }
-function sortProds(list){
-  if(!_invSort.field&&!_prodSort.field)return list;
-  const s=_invSort.field?_invSort:_prodSort;
+function sortProds(list,mode){
+  // mode='inv' 用 _invSort，mode='prod' 用 _prodSort，避免互相干擾
+  const s=mode==='inv'?_invSort:_prodSort;
+  if(!s.field)return list;
   return [...list].sort((a,b)=>{
     const av=s.field==='stock'?a.stock:(a.ptw||j2t(a.pjp));
     const bv=s.field==='stock'?b.stock:(b.ptw||j2t(b.pjp));
@@ -906,7 +1064,7 @@ function updateRate(){
   const qr=document.getElementById('qp-rate');if(qr&&!qr.dataset.userEdited)qr.value=S.rate.toFixed(4);
 }
 
-const PGS=['dash','inv','prod','po','pu','sa','rep','qp'];
+const PGS=['dash','inv','prod','po','pu','sa','rep','qp','exp'];
 function showPage(n){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
@@ -916,7 +1074,7 @@ function showPage(n){
   closeSb();
   if(!S.df[n])S.df[n]={from:'',to:''};
   makeDf(n);
-  ({dash:renderDash,inv:renderInv,prod:renderProd,po:renderPo,pu:renderPu,sa:renderSa,rep:renderRep,qp:()=>{renderQpHist();renderQpPoList();}})[n]?.();
+  ({dash:renderDash,inv:renderInv,prod:renderProd,po:renderPo,pu:renderPu,sa:renderSa,rep:renderRep,qp:()=>{renderQpHist();renderQpPoList();qpCalc();},exp:renderExp})[n]?.();
 }
 function inRange(date,pg){
   const df=S.df[pg]||{};
@@ -939,7 +1097,7 @@ function makeDf(pg){
 }
 function setDf(pg,field,val){if(!S.df[pg])S.df[pg]={from:'',to:''};S.df[pg][field]=val;makeDf(pg);renderByPg(pg);}
 function applyP(pg,from,to){S.df[pg]={from,to};makeDf(pg);renderByPg(pg);}
-function renderByPg(pg){({dash:renderDash,inv:renderInv,prod:renderProd,po:renderPo,pu:renderPu,sa:renderSa,rep:renderRep,qp:()=>{renderQpHist();renderQpPoList();}})[pg]?.();}
+function renderByPg(pg){({dash:renderDash,inv:renderInv,prod:renderProd,po:renderPo,pu:renderPu,sa:renderSa,rep:renderRep,qp:()=>{renderQpHist();renderQpPoList();qpCalc();},exp:renderExp})[pg]?.();}
 
 function renderDash(){
   const fPo=S.preorders.filter(o=>inRange(o.date,'dash'));
@@ -953,8 +1111,8 @@ function renderDash(){
   const ts=S.products.reduce((a,p)=>a+p.stock,0);
   const pc=profit>=0?'var(--ok)':'var(--danger)';
   document.getElementById('d-stats').innerHTML=`
-    <div class="stat"><div class="slbl">商品種類</div><div class="sval">${S.products.length}</div></div>
-    <div class="stat"><div class="slbl">總庫存件數</div><div class="sval">${ts}</div></div>
+    <div class="stat"><div class="slbl">商品種類 <span style="font-size:9px;color:var(--text3)">(即時)</span></div><div class="sval">${S.products.length}</div></div>
+    <div class="stat"><div class="slbl">總庫存件數 <span style="font-size:9px;color:var(--text3)">(即時)</span></div><div class="sval">${ts}</div></div>
     <div class="stat"><div class="slbl">期間銷售額</div><div class="sval" style="font-size:14px">${ntd(rev)}</div></div>
     <div class="stat"><div class="slbl">期間毛利</div><div class="sval" style="font-size:14px;color:${pc}">${ntd(profit)}<div style="font-size:11px;font-weight:400;color:${pc};margin-top:2px">${margin.toFixed(1)}%</div></div></div>`;
   const stL={pending:'待採購',payment:'待匯款',purchased:'已採購',arrived:'已到貨',shipped:'已出貨'};
@@ -981,15 +1139,24 @@ function getVarStock(pid){
   return vs;
 }
 function renderInv(){
+  // 更新類別篩選下拉
+  const icf=document.getElementById('inv-cat-f');
+  if(icf){
+    const cur=icf.value;
+    icf.innerHTML='<option value="">全部類別</option>'+S.categories.map(c=>`<option value="${c}">${c}</option>`).join('');
+    icf.value=cur;
+  }
+  const catFilter=document.getElementById('inv-cat-f')?.value||'';
+
   const fPu=S.purchases.filter(p=>inRange(p.date,'inv'));
-  const prods=S.products;
+  const prods=S.products.filter(p=>!catFilter||(p.cat||'')=== catFilter);
   // 使用加權平均攤運後成本計算壓貨成本
   const totalCost=prods.reduce((a,p)=>a+p.stock*getWeightedAvgCost(p.id),0);
   const totalSell=prods.reduce((a,p)=>a+p.stock*(p.ptw||j2t(p.pjp)),0);
   const ts=prods.reduce((a,p)=>a+p.stock,0);
   const inflow=fPu.reduce((a,b)=>a+b.items.reduce((c,i)=>c+i.qty,0),0);
   document.getElementById('inv-cf').innerHTML=`
-    <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">庫存現金流試算（目前實際庫存，成本含進貨運費攤提）</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">庫存現金流試算（目前實際庫存，成本含進貨運費攤提）${catFilter?`<span class="pill nn" style="font-size:10px;margin-left:6px">類別：${catFilter}</span>`:''}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:.75rem">
       <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">壓貨成本</div>
         <div style="font-size:20px;font-weight:500">${ntd(totalCost)}</div>
@@ -1006,8 +1173,8 @@ function renderInv(){
     </div>`;
   const maxS=Math.max(...prods.map(p=>p.stock),1);
   const el=document.getElementById('inv-list');
-  if(!prods.length){el.innerHTML='<div class="empty">尚無商品</div>';return;}
-  const sorted=_invSort.field?sortProds(prods):prods;
+  if(!prods.length){el.innerHTML='<div class="empty">此類別無商品</div>';return;}
+  const sorted=_invSort.field?sortProds(prods,'inv'):prods;
   el.innerHTML=sorted.map(p=>{
     // 使用加權平均攤運後成本
     const cNT=getWeightedAvgCost(p.id);
@@ -1019,7 +1186,6 @@ function renderInv(){
     let varStockHtml='';
     if(p.vars&&p.vars.length>0){
       const vs=getVarStock(p.id);
-      // [FIX 5] 若該商品完全沒有進貨記錄，規格庫存無法從進貨計算，顯示提示
       const hasPurchaseRecord=S.purchases.some(pu=>pu.items.some(i=>parseInt(i.pid)===p.id));
       if(!hasPurchaseRecord){
         varStockHtml=`<div style="margin-top:7px;font-size:10px;color:var(--text3)">各規格庫存：庫存來自初始設定，無進貨明細可計算規格分佈</div>`;
@@ -1034,9 +1200,10 @@ function renderInv(){
           }).join('')+`</div>`;
       }
     }
+    const catBadge=p.cat?`<span class="pill nn" style="font-size:9px;padding:1px 5px;margin-right:4px">${p.cat}</span>`:'';
     return `<div style="padding:12px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div><div style="font-size:13px;font-weight:500">${p.name}</div>
+        <div><div style="font-size:13px;font-weight:500">${catBadge}${p.name}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:1px">${p.jp||''}</div></div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="pill ${sp}">${sl}</span>
@@ -1053,54 +1220,21 @@ function renderInv(){
     </div>`;
   }).join('');
 }
-// ── 商品圖片處理 ──
-let _mpImgData=null; // base64 暫存
-function handleProdImg(e){
-  const f=e.target.files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    _mpImgData=ev.target.result;
-    const prev=document.getElementById('mp-img-preview');
-    const lbl=document.getElementById('mp-img-label');
-    const clr=document.getElementById('mp-img-clear');
-    prev.src=_mpImgData;prev.style.display='block';
-    lbl.style.display='none';clr.style.display='block';
-  };
-  reader.readAsDataURL(f);
-}
-function clearProdImg(e){
-  e.stopPropagation();
-  _mpImgData=null;
-  document.getElementById('mp-img-file').value='';
-  document.getElementById('mp-img-preview').style.display='none';
-  document.getElementById('mp-img-preview').src='';
-  document.getElementById('mp-img-label').style.display='block';
-  document.getElementById('mp-img-clear').style.display='none';
-}
 function openPM(id){
-  S.epid=id||null;S.tvars=[];_mpImgData=null;
+  S.epid=id||null;S.tvars=[];
   document.getElementById('mp-t').textContent=id?'編輯商品':'新增商品';
   ['mp-name','mp-jp','mp-ctw','mp-cjp','mp-ptw','mp-pjp','mp-note'].forEach(f=>{const e=document.getElementById(f);if(e)e.value='';});
   document.getElementById('mp-stock').value='0';document.getElementById('mp-min').value='2';
-  // reset image UI
-  document.getElementById('mp-img-file').value='';
-  document.getElementById('mp-img-preview').style.display='none';
-  document.getElementById('mp-img-preview').src='';
-  document.getElementById('mp-img-label').style.display='block';
-  document.getElementById('mp-img-clear').style.display='none';
+  // 更新類別下拉
+  const mc=document.getElementById('mp-cat');
+  mc.innerHTML='<option value="">（未分類）</option>'+S.categories.map(c=>`<option value="${c}">${c}</option>`).join('');
   if(id){const p=gp(id);if(!p)return;S.tvars=[...(p.vars||[])];
     document.getElementById('mp-name').value=p.name;document.getElementById('mp-jp').value=p.jp||'';
+    mc.value=p.cat||'';
     document.getElementById('mp-ctw').value=p.ctw||j2t(p.cjp||0);document.getElementById('mp-cjp').value=p.cjp||'';
     document.getElementById('mp-ptw').value=p.ptw||j2t(p.pjp||0);document.getElementById('mp-pjp').value=p.pjp||'';
     document.getElementById('mp-stock').value=p.stock||0;document.getElementById('mp-min').value=p.min||2;
     document.getElementById('mp-note').value=p.note||'';
-    if(p.img){
-      _mpImgData=p.img;
-      const prev=document.getElementById('mp-img-preview');
-      prev.src=p.img;prev.style.display='block';
-      document.getElementById('mp-img-label').style.display='none';
-      document.getElementById('mp-img-clear').style.display='block';
-    }
   }
   renderVT();om('m-prod');
 }
@@ -1110,44 +1244,49 @@ function renderVT(){document.getElementById('mp-vt').innerHTML=S.tvars.map(v=>`<
 function saveProd(){
   const name=document.getElementById('mp-name').value.trim();if(!name){alert('請輸入商品名稱');return;}
   const d={name,jp:document.getElementById('mp-jp').value.trim(),
+    cat:document.getElementById('mp-cat').value||'',
     ctw:parseFloat(document.getElementById('mp-ctw').value)||0,cjp:parseFloat(document.getElementById('mp-cjp').value)||0,
     ptw:parseFloat(document.getElementById('mp-ptw').value)||0,pjp:parseFloat(document.getElementById('mp-pjp').value)||0,
     stock:parseInt(document.getElementById('mp-stock').value)||0,min:parseInt(document.getElementById('mp-min').value)||2,
-    vars:[...S.tvars],note:document.getElementById('mp-note').value.trim(),date:td(),
-    img:_mpImgData||null};
+    vars:[...S.tvars],note:document.getElementById('mp-note').value.trim(),date:td()};
   if(S.epid){const i=S.products.findIndex(p=>p.id===S.epid);if(i>=0)S.products[i]={...S.products[i],...d};}
   else{d.id=S.nPid++;S.products.push(d);}
   sv();cm('m-prod');renderProd();
 }
 function delProd(id){cfm('確定刪除此商品？',()=>{S.products=S.products.filter(p=>p.id!==id);sv();renderProd();});}
 function renderProd(){
+  // 更新類別篩選下拉
+  const cf=document.getElementById('p-cat-f');
+  if(cf){
+    const cur=cf.value;
+    cf.innerHTML='<option value="">全部類別</option>'+S.categories.map(c=>`<option value="${c}">${c}</option>`).join('');
+    cf.value=cur;
+  }
   const q=(document.getElementById('p-s')?.value||'').toLowerCase();
-  let list=S.products.filter(p=>(!q||p.name.toLowerCase().includes(q)||(p.jp||'').toLowerCase().includes(q))&&inRange(p.date,'prod'));
+  const catF=document.getElementById('p-cat-f')?.value||'';
+  let list=S.products.filter(p=>
+    (!q||p.name.toLowerCase().includes(q)||(p.jp||'').toLowerCase().includes(q))
+    &&(!catF||(p.cat||'')=== catF)
+    &&inRange(p.date,'prod'));
   if(_prodSort.field){
-    list=[...list].sort((a,b)=>{
-      const av=_prodSort.field==='stock'?a.stock:(a.ptw||j2t(a.pjp));
-      const bv=_prodSort.field==='stock'?b.stock:(b.ptw||j2t(b.pjp));
-      return _prodSort.dir==='asc'?av-bv:bv-av;
-    });
+    list=sortProds(list,'prod');
   }
   const tb=document.getElementById('prod-tb');
-  if(!list.length){tb.innerHTML='<tr><td colspan="5"><div class="empty">此期間無商品</div></td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="8"><div class="empty">此期間無商品</div></td></tr>';return;}
   tb.innerHTML=list.map(p=>{
     const varsHtml=p.vars&&p.vars.length
       ?p.vars.map(v=>`<span class="pill nn" style="font-size:10px;padding:1px 6px">${v}</span>`).join(' ')
       :'<span style="color:var(--text3);font-size:11px">—</span>';
-    const imgCell=p.img
-      ?`<img src="${p.img}" class="prod-thumb">`
-      :`<div style="width:36px;height:36px;background:var(--bg2);border:1px solid var(--border);flex-shrink:0"></div>`;
+    const catBadge=p.cat?`<span class="pill nn" style="font-size:9px;padding:1px 5px">${p.cat}</span> `:'';
     return `<tr>
-      <td style="padding:8px">${imgCell}</td>
-      <td><div style="font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.jp||''}</div></td>
+      <td style="padding:8px"><div style="width:32px;height:32px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)"></div></td>
+      <td><div style="font-weight:500">${catBadge}${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.jp||''}</div></td>
       <td><div>${ntd(p.ctw||j2t(p.cjp))}</div><div style="font-size:11px;color:var(--text3)">${jpy(p.cjp)}</div></td>
       <td><div>${ntd(p.ptw||j2t(p.pjp))}</div><div style="font-size:11px;color:var(--text3)">${jpy(p.pjp)}</div></td>
       <td><div style="display:flex;flex-wrap:wrap;gap:3px">${varsHtml}</div></td>
       <td><span class="pill ${p.stock===0?'dd':p.stock<=p.min?'wn':'nn'}">${p.stock}</span></td>
       <td style="font-size:11px;color:var(--text3)">${p.min??2}</td>
-      <td><div style="display:flex;gap:4px"><button class="btn btn-sm" onclick="openPM(${p.id})">編輯</button><button class="btn btn-sm btn-d" onclick="delProd(${p.id})">刪除</button></div></td>
+      <td><div style="display:flex;gap:4px;flex-wrap:nowrap"><button class="btn btn-sm" onclick="openPM(${p.id})">編輯</button><button class="btn btn-sm btn-d" onclick="delProd(${p.id})">刪除</button></div></td>
     </tr>`;
   }).join('');
 }
@@ -1209,10 +1348,16 @@ function renderPoItems(){
         </div>${totalTag}
       </div>`;
     }
-    const pO=S.products.map(p=>`<option value="${p.id}" ${item.pid==p.id?'selected':''}>${p.name}</option>`).join('');
+    const catF=item._catFilter||'';
+    const catOpts='<option value="">全部類別</option>'+S.categories.map(c=>`<option value="${c}" ${catF===c?'selected':''}>${c}</option>`).join('');
+    const pO=buildProdOpts(item.pid,catF);
     const pr=item.pid?gp(parseInt(item.pid)):null;
     const vO=pr?.vars?.length?pr.vars.map(v=>`<option value="${v}" ${item.v===v?'selected':''}>${v}</option>`).join(''):'<option value="">無規格</option>';
     return `<div style="margin-bottom:6px">
+      ${S.categories.length?`<div style="margin-bottom:4px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">類別</span>
+        <select onchange="S.poI[${i}]._catFilter=this.value;S.poI[${i}].pid='';S.poI[${i}].v='';renderPoItems()" style="font-size:13px;padding:4px 7px;width:auto">${catOpts}</select>
+      </div>`:''}
       <div class="oi" style="margin-bottom:0">
         <select onchange="updOI(${i},'pid',this.value)" style="flex:2;font-size:16px"><option value="">選商品</option>${pO}</select>
         <select onchange="updOI(${i},'v',this.value)" style="font-size:16px">${vO}</select>
@@ -1243,7 +1388,8 @@ function rmOI(i){S.poI.splice(i,1);renderPoItems();poCalcTotal();}
 function savePo(){
   if(document.getElementById('m-po').dataset.mode==='qp'){saveQpPo();return;}
   const name=document.getElementById('po-name').value.trim();if(!name){alert('請輸入客戶姓名');return;}
-  const valid=S.poI.filter(i=>i.pid);if(!valid.length){alert('請新增商品');return;}
+  const valid=S.poI.filter(i=>i.pid||(i.customName!==undefined&&i.customName!==''));
+  if(!valid.length){alert('請新增商品');return;}
   const chVal=document.getElementById('po-channel').value;
   const channel=chVal==='other'?(document.getElementById('po-channel-other').value.trim()||'其他'):chVal;
   const base={name,phone:document.getElementById('po-phone').value.trim(),
@@ -1252,7 +1398,7 @@ function savePo(){
     address:document.getElementById('po-address').value.trim(),
     freight:parseFloat(document.getElementById('po-freight').value)||0,
     dj:parseFloat(document.getElementById('po-dj').value)||0,dt:parseFloat(document.getElementById('po-dt').value)||0,
-    items:valid.map(i=>({...i,pid:parseInt(i.pid),qty:parseInt(i.qty)||1})),
+    items:valid.map(i=>{const {_catFilter,...clean}=i;return {...clean,pid:parseInt(i.pid)||0,qty:parseInt(i.qty)||1};}),
     note:document.getElementById('po-note').value.trim()};
   if(S.eqpoid){
     const idx=S.preorders.findIndex(p=>p.id===S.eqpoid);
@@ -1266,7 +1412,14 @@ function savePo(){
   document.querySelector('#m-po .mf .btn-p').textContent='建立';
   sv();cm('m-po');renderPo();
 }
-function updPoSt(id,s){const o=S.preorders.find(p=>p.id===id);if(o){o.status=s;sv();renderPo();const w=document.getElementById('qp-po-wrap');if(w&&w.style.display!=='none')renderQpPoList();}}
+function updPoSt(id,s){
+  const o=S.preorders.find(p=>p.id===id);
+  if(o){
+    o.status=s;sv();renderPo();
+    const w=document.getElementById('qp-po-wrap');
+    if(w&&w.style.display!=='none')renderQpPoList();
+  }
+}
 function delPo(id){cfm('確定刪除此預購單？',()=>{S.preorders=S.preorders.filter(o=>o.id!==id);sv();renderPo();});}
 function editPo(id){
   const o=S.preorders.find(p=>p.id===id);if(!o)return;
@@ -1303,36 +1456,40 @@ function batchPoToSale(){
   if(!checked.length){alert('請先勾選要轉入銷貨的預購單');return;}
   // 彙整所有待轉品項，先做庫存檢查
   const allItems=[];
+  let hasCustom=false;
   checked.forEach(id=>{
     const o=S.preorders.find(p=>p.id===id);if(!o)return;
-    o.items.filter(i=>i.pid).forEach(item=>allItems.push({pid:item.pid,v:item.v||'',qty:parseInt(item.qty)||1}));
+    o.items.forEach(item=>{
+      if(item.pid)allItems.push({pid:item.pid,v:item.v||'',qty:parseInt(item.qty)||1});
+      else if(item.customName)hasCustom=true;
+    });
   });
   const short=checkStock(allItems);
   const doTransfer=()=>{
     checked.forEach(id=>{
       const o=S.preorders.find(p=>p.id===id);if(!o)return;
-      // [FIX 6] sharedSid 用當前 nSid，所有品項共用，最後只遞增一次（避免跳號）
       const sharedSid='S-'+String(S.nSid).padStart(3,'0');
-      const validItems=o.items.filter(i=>i.pid);
-      validItems.forEach((item,idx)=>{
-        const prod=gp(item.pid);
-        // id 欄位用獨立遞增的子序號以保持唯一性
-        S.sales.push({id:Date.now()+idx,sid:sharedSid,cust:o.name,pid:item.pid,v:item.v||'',qty:parseInt(item.qty)||1,
-          pj:item.pj||0,pt:item.pt||(prod?prod.ptw||j2t(prod.pjp||0):0),
-          cj:prod?prod.cjp||0:0,ct:prod?getWeightedAvgCost(prod.id):0,
-          freight:idx===0?(Number(o.freight)||0):0,
-          poid:o.id,date:td()});
-        if(prod)prod.stock=Math.max(0,prod.stock-(parseInt(item.qty)||1));
-      });
-      if(validItems.length)S.nSid++; // [FIX 6] 每張訂單只遞增一次
+      const allValidItems=o.items.filter(i=>i.pid||(i.customName&&i.customName!==''));
+        allValidItems.forEach((item,idx)=>{
+          const prod=item.pid?gp(item.pid):null;
+          S.sales.push({id:uid(),sid:sharedSid,cust:o.name,pid:item.pid||0,v:item.v||'',qty:parseInt(item.qty)||1,
+            pj:item.pj||0,pt:item.pt||(prod?prod.ptw||j2t(prod.pjp||0):0),
+            cj:prod?prod.cjp||0:0,ct:prod?getWeightedAvgCost(prod.id):0,
+            freight:idx===0?(Number(o.freight)||0):0,
+            customProdName:prod?null:(item.customName||null),
+            poid:o.id,date:o.date||td()});
+          if(prod)prod.stock=Math.max(0,prod.stock-(parseInt(item.qty)||1));
+        });
+      if(allValidItems.length)S.nSid++;
     });
     S.preorders=S.preorders.filter(o=>!checked.includes(o.id));
     sv();renderPo();renderSa();renderInv();
   };
+  const customNote=hasCustom?'\n\n📌 注意：部分品項為自訂品名（無綁定商品），成本將記為 0，請事後手動核對毛利。':'';
   if(short.length){
-    cfm('⚠️ 庫存不足警告\n\n'+stockWarnMsg(short).split('\n\n確定仍要繼續儲存？')[0]+'\n\n確定仍要批次轉入銷貨並刪除預購單？',doTransfer,'仍要轉入','btn-d');
+    cfm('⚠️ 庫存不足警告\n\n'+stockWarnMsg(short).split('\n\n確定仍要繼續儲存？')[0]+'\n\n確定仍要批次轉入銷貨並刪除預購單？'+customNote,doTransfer,'仍要轉入','btn-d');
   } else {
-    cfm(`確定將 ${checked.length} 筆預購單轉入銷貨紀錄並刪除？`,doTransfer,'轉入並刪除','btn-d');
+    cfm(`確定將 ${checked.length} 筆預購單轉入銷貨紀錄並刪除？`+customNote,doTransfer,'轉入並刪除','btn-d');
   }
 }
 function renderPo(){
@@ -1340,7 +1497,7 @@ function renderPo(){
   const fs=document.getElementById('po-f')?.value||'';
   const stL={pending:'待採購',payment:'待匯款',purchased:'已採購',arrived:'已到貨',shipped:'已出貨'};
   const stC={pending:'wn',payment:'dd',purchased:'bl',arrived:'pp',shipped:'ok'};
-  const list=S.preorders.filter(o=>(!q||o.name.toLowerCase().includes(q))&&(!fs||o.status===fs)&&inRange(o.date,'po'));
+  const list=S.preorders.filter(o=>(!q||o.name.toLowerCase().includes(q))&&(!fs||o.status===fs)&&inRange(o.date,'po')).slice().reverse();
   const el=document.getElementById('po-list');
   if(!list.length){el.innerHTML='<div class="empty">此期間無預購單</div>';return;}
   el.innerHTML=list.map(o=>{
@@ -1373,9 +1530,12 @@ function renderPo(){
         </div>
         ${o.note?`<div style="font-size:11px;color:var(--text3);background:var(--bg2);border-radius:var(--rs);padding:5px 8px;margin-bottom:6px">備註：${o.note}</div>`:''}
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <div style="font-size:11px;color:var(--text3)">訂金 ${ntd(o.dt)}</div>
+          <div style="font-size:11px;color:var(--text3)">
+            訂金 ${ntd(o.dt||0)}
+            ${(o.dt||0)>0?`<span style="margin-left:8px;font-weight:600;color:var(--danger)">剩餘應付 ${ntd(Math.max(0,total-(o.dt||0)))}</span>`:''}
+          </div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <select onchange="updPoSt(${o.id},this.value)" style="font-size:11px;padding:4px 7px;width:auto">
+            <select onchange="updPoSt(${o.id},this.value)" class="st-sel s-${stC[o.status]}" style="font-size:11px;padding:4px 7px;width:auto">
               ${Object.entries(stL).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
             </select>
             <button class="btn btn-sm" onclick="editPo(${o.id})">編輯</button>
@@ -1399,17 +1559,22 @@ function openPuM(){
 function addPuI(){S.puI.push({pid:'',v:'',qty:1,cur:'ntd',costVal:0,cjp:0,ctw:0,_prevCur:'ntd'});renderPuItems();}
 function renderPuItems(){
   document.getElementById('pu-items').innerHTML=S.puI.map((item,i)=>{
-    const pO=S.products.map(p=>`<option value="${p.id}" ${item.pid==p.id?'selected':''}>${p.name}</option>`).join('');
+    const catF=item._catFilter||'';
+    const catOpts='<option value="">全部類別</option>'+S.categories.map(c=>`<option value="${c}" ${catF===c?'selected':''}>${c}</option>`).join('');
+    const pO=buildProdOpts(item.pid,catF);
     const pr=item.pid?gp(parseInt(item.pid)):null;
     const vO=pr?.vars?.length?pr.vars.map(v=>`<option value="${v}" ${item.v===v?'selected':''}>${v}</option>`).join(''):'<option value="">無規格</option>';
     const cur=item.cur||'ntd';
     const qty=parseInt(item.qty)||1;
     const cv=parseFloat(item.costVal)||0;
     const lineTotal=qty*cv;
-    // 總額顯示字串
     const totalDisp=lineTotal>0?(cur==='ntd'?ntd(lineTotal):jpy(lineTotal)):(cur==='ntd'?'NT —':'¥ —');
     const totalNT=cur==='jpy'?j2t(lineTotal):lineTotal;
     return `<div style="background:var(--bg2);border-radius:var(--rs);padding:8px;margin-bottom:6px">
+      ${S.categories.length?`<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">類別</span>
+        <select onchange="S.puI[${i}]._catFilter=this.value;S.puI[${i}].pid='';S.puI[${i}].v='';renderPuItems()" style="font-size:13px;padding:4px 7px;width:auto">${catOpts}</select>
+      </div>`:''}
       <!-- 主列：商品/規格/數量/幣別/總額 -->
       <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:7px">
         <select onchange="updPuI(${i},'pid',this.value)" style="flex:2;min-width:90px"><option value="">選商品</option>${pO}</select>
@@ -1476,7 +1641,7 @@ function savePu(){
   const data={batch:document.getElementById('pu-batch').value.trim()||'未命名批次',
     date:document.getElementById('pu-date').value||td(),
     sj:sjUsed,st:stUsed,
-    items:valid.map(i=>({...i,pid:parseInt(i.pid),qty:parseInt(i.qty),alloc:allocJPY,allocNT})),
+    items:valid.map(i=>{const {_catFilter,_prevCur,...clean}=i;return {...clean,pid:parseInt(i.pid),qty:parseInt(i.qty),alloc:allocJPY,allocNT};}),
     note:document.getElementById('pu-note').value.trim()};
   if(S._puEditId){
     // [Fix 4] 先還原舊進貨庫存，再更新紀錄，再加入新庫存
@@ -1500,7 +1665,8 @@ function savePu(){
   sv();cm('m-pu');renderPu();renderInv();
 }
 function renderPu(){
-  const fPu=S.purchases.filter(p=>inRange(p.date,'pu'));
+  const q=(document.getElementById('pu-s')?.value||'').toLowerCase();
+  const fPu=S.purchases.filter(p=>inRange(p.date,'pu')&&(!q||p.batch.toLowerCase().includes(q)||p.items.some(i=>{const pr=gp(i.pid);return pr&&pr.name.toLowerCase().includes(q);})));
   const tb=document.getElementById('pu-tb');
   if(!fPu.length){tb.innerHTML='<tr><td colspan="8"><div class="empty">此期間無進貨紀錄</div></td></tr>';return;}
   const rows=[];
@@ -1634,10 +1800,16 @@ function renderSaItems(){
         </div>
       </div>`;
     }
-    const pO=S.products.map(p=>`<option value="${p.id}" ${item.pid==p.id?'selected':''}>${p.name}</option>`).join('');
+    const catF=item._catFilter||'';
+    const catOpts='<option value="">全部類別</option>'+S.categories.map(c=>`<option value="${c}" ${catF===c?'selected':''}>${c}</option>`).join('');
+    const pO=buildProdOpts(item.pid,catF);
     const pr=item.pid?gp(parseInt(item.pid)):null;
     const vO=pr?.vars?.length?pr.vars.map(v=>`<option value="${v}" ${item.v===v?'selected':''}>${v}</option>`).join(''):'<option value="">無規格</option>';
     return `<div style="background:var(--bg2);border-radius:var(--rs);padding:8px;margin-bottom:6px">
+      ${S.categories.length?`<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">類別</span>
+        <select onchange="_saItems[${i}]._catFilter=this.value;_saItems[${i}].pid='';_saItems[${i}].v='';renderSaItems()" style="font-size:13px;padding:4px 7px;width:auto">${catOpts}</select>
+      </div>`:''}
       <div class="frow f2" style="margin-bottom:4px">
         <div class="fg"><div class="fl">商品</div><select onchange="updSaI(${i},'pid',this.value)" style="font-size:16px"><option value="">選商品</option>${pO}</select></div>
         <div class="fg"><div class="fl">規格</div><select onchange="updSaI(${i},'v',this.value)" style="font-size:16px">${vO}</select></div>
@@ -1729,13 +1901,15 @@ function saveSa(){
   // 客戶姓名選填，不做必填驗證
   const valid=_saItems.filter(i=>i.pid||i.customProdName);
   if(!valid.length){alert('請選擇至少一項商品');return;}
+  const sdate=document.getElementById('s-date').value;
+  if(!sdate){alert('請選擇日期');return;}
   const short=checkStock(valid);
   if(short.length){cfm(stockWarnMsg(short),()=>_doSaveSa(valid),'仍要儲存','btn-d');return;}
   _doSaveSa(valid);
 }
 function _doSaveSa(valid){
   const cust=document.getElementById('s-cust').value.trim()||'散客';
-  const sdate=document.getElementById('s-date').value;
+  const sdate=document.getElementById('s-date').value||td();
   const saFreight=parseFloat(document.getElementById('s-freight').value)||0;
   const saChVal=document.getElementById('s-channel').value;
   const saChannel=saChVal==='other'?(document.getElementById('s-channel-other').value.trim()||'其他'):saChVal;
@@ -1752,9 +1926,10 @@ function _doSaveSa(valid){
     });
     S.sales=S.sales.filter(s=>s.sid!==_saEditId);
   }
-  const sharedSid='S-'+String(S.nSid).padStart(3,'0');
+  const isEdit=!!_saEditId;
+  const sharedSid=isEdit?_saEditId:('S-'+String(S.nSid).padStart(3,'0'));
   valid.forEach((item,idx)=>{
-    S.sales.push({id:S.nSid++,sid:sharedSid,cust,
+    S.sales.push({id:uid(),sid:sharedSid,cust,
       phone:saPhone,channel:saChannel,cid:saCid,
       pickup:saPickup,store:saStore,address:saAddress,
       pid:parseInt(item.pid)||0,v:item.v||'',qty:item.qty||1,
@@ -1765,6 +1940,7 @@ function _doSaveSa(valid){
     const p=S.products.find(x=>x.id===parseInt(item.pid));
     if(p)p.stock=Math.max(0,p.stock-(item.qty||1));
   });
+  if(!isEdit)S.nSid++;
   _saEditId=null;_saItems=[];
   sv();cm('m-sa');renderSa();renderInv();
 }
@@ -1807,17 +1983,18 @@ function delSa(sid){
   });
 }
 function renderSa(){
-  const fS=S.sales.filter(s=>inRange(s.date,'sa'));
+  const q=(document.getElementById('sa-s')?.value||'').toLowerCase();
+  const ch=document.getElementById('sa-ch')?.value||'';
+  const fS=S.sales.filter(s=>inRange(s.date,'sa')&&(!q||(s.cust||'').toLowerCase().includes(q)||(s.cid||'').toLowerCase().includes(q))&&(!ch||s.channel===ch));
   const el=document.getElementById('sa-list');
   if(!fS.length){el.innerHTML='<div class="empty" style="padding:2rem">此期間無銷售紀錄</div>';return;}
-  // 以 sid 分組
-  const groups={};const order=[];
-  fS.forEach(s=>{
-    if(!groups[s.sid]){groups[s.sid]=[];order.push(s.sid);}
-    groups[s.sid].push(s);
-  });
+  // 先收集 sid 出現順序（按最新在前），再分組（組內保持原始順序）
+  const sidOrder=[];
+  [...fS].reverse().forEach(s=>{if(!sidOrder.includes(s.sid))sidOrder.push(s.sid);});
+  const groups={};
+  fS.forEach(s=>{if(!groups[s.sid])groups[s.sid]=[];groups[s.sid].push(s);});
   const stPickup={self:'自取',store:'店到店',delivery:'宅配'};
-  el.innerHTML=order.map(sid=>{
+  el.innerHTML=sidOrder.map(sid=>{
     const list=groups[sid];
     const first=list[0];
     const itemRev=list.reduce((a,s)=>a+s.pt*s.qty,0);
@@ -2232,24 +2409,25 @@ function qpPoToSale(id){
     o.items.forEach((item,idx)=>{
       const realProd=item.pid&&gp(item.pid)?gp(item.pid):null;
       const baseName=realProd?realProd.name:(item.customName||'商品');
-      const displayName='(連線商品)'+baseName;
       S.sales.push({
-        id:S.nSid++,sid,cust:o.name,
+        id:uid(),sid,cust:o.name,
         pid:realProd?realProd.id:0,
         v:item.v||'',qty:parseInt(item.qty)||1,
         pt:item.pt||0,pj:item.pj||0,
         ct:realProd?getWeightedAvgCost(realProd.id):0,
         cj:realProd?realProd.cjp||0:0,
         freight:idx===0?(o.freight||0):0,
-        customProdName:displayName,
-        poid:null,date:td()
+        customProdName:realProd?null:baseName,
+        poid:null,date:o.date||td()
       });
       if(realProd)realProd.stock=Math.max(0,realProd.stock-(parseInt(item.qty)||1));
     });
-    // 轉銷貨後刪除此連線預購單（與預購單批次轉銷貨行為一致）
+    S.nSid++;
     S.qpOrders=S.qpOrders.filter(x=>x.id!==id);
     sv();renderQpPoList();renderSa();renderInv();
-    alert(`已成功轉入銷售紀錄！單號 ${sid}`);
+    const zeroCostItems=o.items.filter(i=>!i.pid||!gp(i.pid));
+    const notice=zeroCostItems.length?`\n\n📌 注意：${zeroCostItems.length} 件自訂品名品項成本記為 0，請至銷售紀錄手動補填成本。`:'';
+    alert(`已成功轉入銷售紀錄！單號 ${sid}${notice}`);
   };
   if(short.length){
     cfm('⚠️ '+stockWarnMsg(short),doTransfer,'仍要轉入','btn-d');
@@ -2286,7 +2464,7 @@ function renderQpPoList(){
         <span style="margin-left:auto">${o.date}</span>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">
-        <select onchange="updQpPoSt(${o.id},this.value)" style="font-size:11px;padding:3px 6px;width:auto">
+        <select onchange="updQpPoSt(${o.id},this.value)" class="st-sel s-${stC[o.status]}" style="font-size:11px;padding:3px 6px;width:auto">
           ${Object.entries(stL).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
         </select>
         <span class="pill ${stC[o.status]}">${stL[o.status]}</span>
@@ -2301,114 +2479,266 @@ function renderQpPoList(){
 PGS.forEach(p=>{if(!S.df[p])S.df[p]={from:'',to:''};});
 updateRate();makeDf('dash');renderDash();renderQpHist();
 
-// ── 匯出 Excel ────────────────────────────────────
-function exportExcel() {
-  if (typeof XLSX === 'undefined') { alert('Excel 套件載入中，請稍後再試'); return; }
-  const wb = XLSX.utils.book_new();
-  const stL = {pending:'待採購',payment:'待匯款',purchased:'已採購',arrived:'已到貨',shipped:'已出貨'};
-
-  // ① 銷售紀錄
-  const saRows = S.sales.map(s => {
-    const p = gp(s.pid);
-    return {
-      '單號': s.sid, '日期': s.date, '客戶': s.cust||'散客',
-      '管道': s.channel||'', '商品': s.customProdName||(p?p.name:'已刪除'),
-      '規格': s.v||'', '數量': s.qty,
-      '售價(NT)': s.pt, '小計(NT)': s.pt*s.qty,
-      '運費(NT)': s.freight||0, '成本(NT)': s.ct,
-      '毛利(NT)': (s.pt-s.ct)*s.qty, '備註': s.note||''
-    };
+// ── 類別管理 ────────────────────────────────────
+function openCatM(){
+  renderCatList();om('m-cat');
+}
+function renderCatList(){
+  const el=document.getElementById('cat-list');if(!el)return;
+  if(!S.categories.length){el.innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">尚無類別，請在上方輸入後新增</div>';return;}
+  el.innerHTML=S.categories.map((c,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg2);border-radius:var(--rs);margin-bottom:6px">
+      <span style="font-size:13px;font-weight:500">${c}</span>
+      <button class="btn btn-sm btn-d" onclick="delCat(${i})">刪除</button>
+    </div>`).join('');
+}
+function addCat(){
+  const inp=document.getElementById('cat-inp');
+  const v=inp.value.trim();if(!v){return;}
+  if(S.categories.includes(v)){alert('此類別已存在');return;}
+  S.categories.push(v);inp.value='';sv();renderCatList();renderProd();
+}
+function delCat(i){
+  cfm(`確定刪除類別「${S.categories[i]}」？（商品不會被刪除）`,()=>{
+    S.categories.splice(i,1);sv();renderCatList();renderProd();
   });
-  if (saRows.length) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(saRows), '銷售紀錄');
-  }
+}
 
-  // ② 進貨紀錄
-  const puRows = [];
-  S.purchases.forEach(pu => {
-    pu.items.forEach((item, idx) => {
-      const p = gp(item.pid);
-      const allocNT = item.allocNT != null ? item.allocNT : j2t(item.alloc||0);
-      puRows.push({
-        '批次': pu.batch, '日期': pu.date,
-        '商品': p ? p.name : '已刪除', '規格': item.v||'',
-        '數量': item.qty,
-        '單件成本(NT)': item.ctw||j2t(item.cjp||0),
-        '運費攤提(NT)': Math.round(allocNT),
-        '攤提後成本(NT)': Math.round((item.ctw||j2t(item.cjp||0))+allocNT),
-        '批次運費(NT)': idx===0?(pu.st||0):'',
-        '備註': idx===0?(pu.note||''):''
+// ── 其他支出 ────────────────────────────────────
+let _expFrom='',_expTo='';
+let _expKey='all'; // 目前選的快速按鈕 key
+function setExpP(f,t,key){
+  _expFrom=f;_expTo=t;_expKey=key||'custom';
+  const ef=document.getElementById('exp-from');
+  const et=document.getElementById('exp-to');
+  if(ef)ef.value=f;if(et)et.value=t;
+  // 更新按鈕高亮
+  document.querySelectorAll('.exp-dp').forEach(b=>{
+    b.classList.toggle('on',b.dataset.key===_expKey);
+  });
+  renderExp();
+}
+function _refreshExpStats(){
+  const f=document.getElementById('exp-from')?.value||'';
+  const t2=document.getElementById('exp-to')?.value||'';
+  const list=S.expenses.filter(e=>(!f||e.date>=f)&&(!t2||e.date<=t2));
+  const total=list.reduce((a,e)=>a+(e.amt||0),0);
+  const statsEl=document.getElementById('exp-stats');
+  if(statsEl){
+    statsEl.innerHTML=`
+      <div class="stat"><div class="slbl">期間筆數</div><div class="sval">${list.length} 筆</div></div>
+      <div class="stat"><div class="slbl">期間合計</div><div class="sval" style="font-size:14px;color:var(--danger)">${ntd(total)}</div></div>`;
+  }
+}
+function renderExp(){
+  _expFrom=document.getElementById('exp-from')?.value||'';
+  _expTo=document.getElementById('exp-to')?.value||'';
+  // 同步按鈕高亮
+  document.querySelectorAll('.exp-dp').forEach(b=>{
+    b.classList.toggle('on',b.dataset.key===_expKey);
+  });
+  const el=document.getElementById('exp-list');if(!el)return;
+  const list=S.expenses.filter(e=>
+    (!_expFrom||e.date>=_expFrom)&&(!_expTo||e.date<=_expTo));
+  _refreshExpStats();
+  if(!S.expenses.length){el.innerHTML='<div class="empty">尚無支出紀錄，點右上角「＋ 新增」即可建立</div>';return;}
+  if(!list.length){el.innerHTML='<div class="empty">此期間無支出紀錄</div>';return;}
+  el.innerHTML=list.slice().reverse().map(e=>`
+    <div class="card" style="padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <input type="date" value="${e.date}" onchange="updExp(${e.id},'date',this.value)" style="flex:0 0 130px;font-size:13px;padding:5px 8px">
+      <input type="text" value="${e.item}" placeholder="支出項目" onchange="updExp(${e.id},'item',this.value)" style="flex:1;min-width:100px;font-size:14px;padding:5px 8px">
+      <input type="number" value="${e.amt||''}" placeholder="金額" onchange="updExp(${e.id},'amt',this.value)" style="flex:0 0 100px;font-size:14px;padding:5px 8px">
+      <span id="exp-amt-${e.id}" style="font-size:13px;font-weight:600;color:var(--danger);white-space:nowrap">${ntd(e.amt||0)}</span>
+      <button class="btn btn-sm btn-d" onclick="delExp(${e.id})">刪除</button>
+    </div>`).join('');
+}
+function addExpRow(){
+  // 若目前不在其他支出頁，先切換過去
+  const pg=document.querySelector('.page.active');
+  if(!pg||pg.id!=='page-exp')showPage('exp');
+  S.expenses.push({id:S.nExpid++,date:td(),item:'',amt:0});
+  sv();
+  // 清除篩選讓新項目可見
+  setExpP('','');
+}
+function updExp(id,field,val){
+  const e=S.expenses.find(x=>x.id===id);if(!e)return;
+  e[field]=field==='amt'?(parseFloat(val)||0):val;
+  sv();
+  // 只更新金額顯示欄位，不重建整個列表（避免游標跳離）
+  const amtEl=document.getElementById('exp-amt-'+id);
+  if(amtEl)amtEl.textContent=ntd(e.amt||0);
+  // 更新統計
+  _refreshExpStats();
+}
+function delExp(id){
+  cfm('確定刪除此支出項目？',()=>{S.expenses=S.expenses.filter(e=>e.id!==id);sv();renderExp();});
+}
+
+// ── 商品選擇 helpers（類別篩選）────────────────
+function buildProdOpts(selectedPid,catFilter){
+  const prods=catFilter?S.products.filter(p=>(p.cat||'')=== catFilter):S.products;
+  return prods.map(p=>`<option value="${p.id}" ${selectedPid==p.id?'selected':''}>${p.name}</option>`).join('');
+}
+
+// ── Excel 匯出（含時間範圍 + 連線預購單 + 其他支出）──
+function setExP(f,t){
+  const ef=document.getElementById('ex-from');const et=document.getElementById('ex-to');
+  if(ef)ef.value=f;if(et)et.value=t;
+}
+function inExRange(date){
+  const f=document.getElementById('ex-from')?.value||'';
+  const t=document.getElementById('ex-to')?.value||'';
+  if(f&&date<f)return false;if(t&&date>t)return false;return true;
+}
+function doExportExcel(){
+  if(typeof XLSX==='undefined'){alert('Excel 套件載入中，請稍後再試');return;}
+  const wb=XLSX.utils.book_new();
+  const stL={pending:'待採購',payment:'待匯款',purchased:'已採購',arrived:'已到貨',shipped:'已出貨'};
+  const exSa=document.getElementById('ex-sa')?.checked;
+  const exPu=document.getElementById('ex-pu')?.checked;
+  const exPo=document.getElementById('ex-po')?.checked;
+  const exQpPo=document.getElementById('ex-qp-po')?.checked;
+  const exInv=document.getElementById('ex-inv')?.checked;
+  const exQph=document.getElementById('ex-qph')?.checked;
+  const exExp=document.getElementById('ex-exp')?.checked;
+
+  if(exSa){
+    const rows=S.sales.filter(s=>inExRange(s.date)).map(s=>{
+      const p=gp(s.pid);
+      return {'單號':s.sid,'日期':s.date,'客戶':s.cust||'散客','管道':s.channel||'',
+        '商品':s.customProdName||(p?p.name:'已刪除'),'規格':s.v||'','數量':s.qty,
+        '售價(NT)':s.pt,'小計(NT)':s.pt*s.qty,'運費(NT)':s.freight||0,'成本(NT)':s.ct,
+        '毛利(NT)':(s.pt-s.ct)*s.qty,'備註':s.note||''};
+    });
+    if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'銷售紀錄');
+  }
+  if(exPu){
+    const rows=[];
+    S.purchases.filter(pu=>inExRange(pu.date)).forEach((pu,_,arr)=>{
+      pu.items.forEach((item,idx)=>{
+        const p=gp(item.pid);
+        const allocNT=item.allocNT!=null?item.allocNT:j2t(item.alloc||0);
+        rows.push({'批次':pu.batch,'日期':pu.date,'商品':p?p.name:'已刪除','規格':item.v||'',
+          '數量':item.qty,'單件成本(NT)':item.ctw||j2t(item.cjp||0),
+          '運費攤提(NT)':Math.round(allocNT),'攤提後成本(NT)':Math.round((item.ctw||j2t(item.cjp||0))+allocNT),
+          '批次運費(NT)':idx===0?(pu.st||0):'','備註':idx===0?(pu.note||''):''});
       });
     });
-  });
-  if (puRows.length) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(puRows), '進貨紀錄');
+    if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'進貨紀錄');
   }
-
-  // ③ 預購單
-  const poRows = [];
-  S.preorders.forEach(o => {
-    o.items.forEach((item, idx) => {
-      const p = gp(item.pid);
-      poRows.push({
-        '單號': o.oid, '日期': o.date, '客戶': o.name,
-        '電話': o.phone||'', '管道': o.channel||'',
-        '狀態': stL[o.status]||o.status,
-        '商品': p?p.name:(item.customName||'?'),
-        '規格': item.v||'', '數量': item.qty,
-        '單價(NT)': item.pt||0,
-        '小計(NT)': (item.qty||1)*(item.pt||0),
-        '運費(NT)': idx===0?(o.freight||0):'',
-        '訂金(NT)': idx===0?(o.dt||0):'',
-        '取件方式': o.pickup==='store'?'店到店':o.pickup==='delivery'?'宅配':'自取',
-        '備註': idx===0?(o.note||''):''
+  if(exPo){
+    const rows=[];
+    S.preorders.filter(o=>inExRange(o.date)).forEach(o=>{
+      o.items.forEach((item,idx)=>{
+        const p=gp(item.pid);
+        rows.push({'單號':o.oid,'日期':o.date,'客戶':o.name,'電話':o.phone||'','管道':o.channel||'',
+          '狀態':stL[o.status]||o.status,'商品':p?p.name:(item.customName||'?'),'規格':item.v||'',
+          '數量':item.qty,'單價(NT)':item.pt||0,'小計(NT)':(item.qty||1)*(item.pt||0),
+          '運費(NT)':idx===0?(o.freight||0):'','訂金(NT)':idx===0?(o.dt||0):'',
+          '取件方式':o.pickup==='store'?'店到店':o.pickup==='delivery'?'宅配':'自取','備註':idx===0?(o.note||''):''});
       });
     });
-  });
-  if (poRows.length) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(poRows), '預購單');
+    if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'預購單');
   }
-
-  // ④ 庫存現況
-  const invRows = S.products.map(p => {
-    const avgCost = getWeightedAvgCost(p.id);
-    const sellNT = p.ptw || j2t(p.pjp);
-    return {
-      '商品名稱': p.name, '日文品名': p.jp||'',
-      '庫存數': p.stock, '低庫存門檻': p.min||2,
-      '進價(NT)': p.ctw||j2t(p.cjp||0), '進價(¥)': p.cjp||0,
-      '售價(NT)': sellNT, '售價(¥)': p.pjp||0,
-      '加權平均成本(NT)': avgCost,
-      '壓貨成本(NT)': Math.round(p.stock * avgCost),
-      '預估售出回收(NT)': Math.round(p.stock * sellNT),
-      '潛在毛利(NT)': Math.round(p.stock * (sellNT - avgCost)),
-      '規格': (p.vars||[]).join('、'), '備註': p.note||''
-    };
-  });
-  if (invRows.length) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(invRows), '庫存現況');
+  if(exQpPo){
+    const rows=[];
+    S.qpOrders.filter(o=>inExRange(o.date)).forEach(o=>{
+      o.items.forEach((item,idx)=>{
+        const p=item.pid&&gp(item.pid);
+        rows.push({'單號':o.oid,'日期':o.date,'客戶':o.name,'電話':o.phone||'','管道':o.channel||'',
+          '狀態':stL[o.status]||o.status,'商品':p?p.name:(item.customName||'?'),'規格':item.v||'',
+          '數量':item.qty,'單價(NT)':item.pt||0,'小計(NT)':(item.qty||1)*(item.pt||0),
+          '運費(NT)':idx===0?(o.freight||0):'','訂金(NT)':idx===0?(o.dt||0):'',
+          '取件方式':o.pickup==='store'?'店到店':o.pickup==='delivery'?'宅配':'自取','備註':idx===0?(o.note||''):''});
+      });
+    });
+    if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'連線預購單');
   }
-
-  // ⑤ 快速訂價紀錄
-  const qpRows = S.qpHistory.map(h => ({
-    '時間': h.ts, '品名': h.pname,
-    '日幣原價(¥)': h.jpyAmt, '含稅日幣(¥)': h.jpyTaxed,
-    '台幣成本(NT)': h.costNT, '建議售價(NT)': h.sellNT,
-    '毛利(NT)': h.profit, '毛利率(%)': h.margin.toFixed(1),
-    '稅金說明': h.taxDesc, '費率說明': h.feeDesc,
-    '使用匯率': h.rate
-  }));
-  if (qpRows.length) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(qpRows), '快速訂價紀錄');
+  if(exInv){
+    const rows=S.products.map(p=>{
+      const avgCost=getWeightedAvgCost(p.id);
+      const sellNT=p.ptw||j2t(p.pjp);
+      return {'商品名稱':p.name,'類別':p.cat||'','日文品名':p.jp||'','庫存數':p.stock,'低庫存門檻':p.min||2,
+        '進價(NT)':p.ctw||j2t(p.cjp||0),'進價(¥)':p.cjp||0,'售價(NT)':sellNT,'售價(¥)':p.pjp||0,
+        '加權平均成本(NT)':avgCost,'壓貨成本(NT)':Math.round(p.stock*avgCost),
+        '預估售出回收(NT)':Math.round(p.stock*sellNT),'潛在毛利(NT)':Math.round(p.stock*(sellNT-avgCost)),
+        '規格':(p.vars||[]).join('、'),'備註':p.note||''};
+    });
+    if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'庫存現況');
   }
+  if(exQph){
+    // qpHistory 的 ts 是「MM/DD HH:mm」格式，需用 id（timestamp）來過濾
+    const fromTs=document.getElementById('ex-from')?.value?new Date(document.getElementById('ex-from').value).getTime():0;
+    const toTs=document.getElementById('ex-to')?.value?new Date(document.getElementById('ex-to').value).getTime()+86399999:Infinity;
+    const rows=S.qpHistory.filter(h=>h.id>=fromTs&&h.id<=toTs).map(h=>({'時間':h.ts,'品名':h.pname,'日幣原價(¥)':h.jpyAmt,'含稅日幣(¥)':h.jpyTaxed,
+      '台幣成本(NT)':h.costNT,'建議售價(NT)':h.sellNT,'毛利(NT)':h.profit,'毛利率(%)':h.margin.toFixed(1),
+      '稅金說明':h.taxDesc,'費率說明':h.feeDesc,'使用匯率':h.rate}));
+    if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'快速訂價紀錄');
+  }
+  if(exExp){
+    const rows=S.expenses.filter(e=>inExRange(e.date)).map(e=>({'日期':e.date,'支出項目':e.item,'金額(NT)':e.amt||0}));
+    if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'其他支出');
+  }
+  if(wb.SheetNames.length===0){alert('此時間範圍內沒有資料可以匯出');return;}
+  const f=document.getElementById('ex-from')?.value||'';
+  const t=document.getElementById('ex-to')?.value||'';
+  const dateTag=f&&t?`_${f}_至_${t}`:f?`_${f}起`:t?`_至_${t}`:'';
+  XLSX.writeFile(wb,`吉吉選物${dateTag}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  cm('m-export');
+}
 
-  if (wb.SheetNames.length === 0) {
-    alert('目前沒有任何資料可以匯出');
+// ── 系統維護 / 清除舊銷售紀錄 ────────────────────
+function openArchive(){
+  // 重設到 step1
+  document.getElementById('arch-step1').style.display='block';
+  document.getElementById('arch-step2').style.display='none';
+  document.getElementById('arch-pw').value='';
+  document.getElementById('arch-pw-err').style.display='none';
+  closeSb();om('m-archive');
+  setTimeout(()=>document.getElementById('arch-pw').focus(),200);
+}
+function closeArchive(){
+  document.getElementById('arch-pw').value='';
+  cm('m-archive');
+}
+function archVerifyPw(){
+  const v=document.getElementById('arch-pw').value;
+  if(v!=='0417'){
+    document.getElementById('arch-pw-err').style.display='block';
+    document.getElementById('arch-pw').value='';
+    document.getElementById('arch-pw').focus();
     return;
   }
-
-  const today = new Date().toISOString().split('T')[0];
-  XLSX.writeFile(wb, `代購帳_${today}.xlsx`);
+  // 密碼正確，計算將被清除的資料量
+  const cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-1);
+  const cutoffStr=cutoff.toISOString().split('T')[0];
+  const oldSids=new Set();
+  S.sales.filter(s=>s.date&&s.date<cutoffStr).forEach(s=>oldSids.add(s.sid));
+  const saCount=oldSids.size;
+  const recCount=S.sales.filter(s=>s.date&&s.date<cutoffStr).length;
+  document.getElementById('arch-step1').style.display='none';
+  document.getElementById('arch-step2').style.display='block';
+  if(saCount===0){
+    document.getElementById('arch-summary').innerHTML=`<span style="color:var(--ok)">✓ 沒有 1 年前（${cutoffStr} 之前）的銷售紀錄，無需清除。</span>`;
+    document.getElementById('arch-confirm-btn').style.display='none';
+  } else {
+    document.getElementById('arch-confirm-btn').style.display='';
+    document.getElementById('arch-summary').innerHTML=`
+      <div>清除範圍：<b>${cutoffStr} 之前</b></div>
+      <div>將刪除銷售單：<b style="color:var(--danger)">${saCount} 筆（共 ${recCount} 筆品項記錄）</b></div>
+      <div style="margin-top:6px;font-size:11px;color:var(--text3)">📦 商品庫存、進貨記錄、預購單不受影響。建議先至「匯出 Excel」備份。</div>`;
+  }
+}
+function doArchive(){
+  const cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-1);
+  const cutoffStr=cutoff.toISOString().split('T')[0];
+  const before=S.sales.length;
+  S.sales=S.sales.filter(s=>!s.date||s.date>=cutoffStr);
+  const removed=before-S.sales.length;
+  sv();cm('m-archive');
+  alert(`✅ 已清除 ${removed} 筆 1 年前的銷售品項記錄，Firebase 同步中。`);
+  renderSa();renderDash();renderRep();
 }
 
 // ── 啟動 Firebase ────────────────────────────────
