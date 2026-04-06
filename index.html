@@ -168,7 +168,7 @@ tr:hover td{background:#faf7f0}
 <!-- SIDEBAR -->
 <div class="sb" id="sidebar">
   <button class="sb-toggle" onclick="toggleSidebar()" title="收合選單">‹</button>
-  <div class="sb-title">吉吉選物 <span class="sb-ver">v1</span></div>
+  <div class="sb-title">代購帳 <span class="sb-ver">v1</span></div>
   <div class="sb-nav" id="sbNav">
     <div class="sb-item active" data-page="6" onclick="goto(6,this)">報表</div>
     <div class="sb-item" data-page="2" onclick="goto(2,this)">商品管理</div>
@@ -191,10 +191,9 @@ tr:hover td{background:#faf7f0}
 <!-- RATE POP -->
 <div class="rate-pop" id="ratePop">
   <div style="font-size:12px;font-weight:500;margin-bottom:10px;display:flex;justify-content:space-between">匯率設定 <span style="cursor:pointer;color:var(--text3)" onclick="toggleRatePop()">✕</span></div>
-  <div class="field" style="margin-bottom:8px"><label>手動設定 (¥1 = ? NT)</label><input type="number" id="rateInput" step="0.0001" placeholder="0.2041"></div>
+  <div class="field" style="margin-bottom:8px"><label>¥1 = ? NT（儲存後固定）</label><input type="number" id="rateInput" step="0.0001" placeholder="0.2041"></div>
   <div style="display:flex;gap:6px;margin-bottom:8px">
-    <button class="btn btn-gold btn-sm" onclick="applyRate()" style="flex:1">套用</button>
-    <button class="btn btn-sm" id="autoBtn" onclick="toggleAuto()" style="flex:1">自動更新</button>
+    <button class="btn btn-gold btn-sm" onclick="applyRate()" style="flex:1">套用並儲存</button>
   </div>
   <div style="font-size:10px;color:var(--text3)" id="lastUpdate"></div>
 </div>
@@ -682,7 +681,7 @@ onSnapshot(DOC_REF, (snap) => {
 
 <script>
 const D={
-  rate:0.2041,autoOn:true,autoTimer:null,synced:false,
+  rate:0.2041,synced:false,
   cats:['娃娃','玩具','公仔','卡片','周邊'],
   sups:[],
   products:[],inventory:[],purchases:[],purchHistory:[],
@@ -722,29 +721,52 @@ function renderCurrentPage(i){
 
 /* MODAL */
 function showModal(id){
+  resetModal(id);
   $(id).style.pointerEvents='all';$(id).classList.add('show');
   if(id==='purchModal')initPurch();if(id==='saleModal')initSale();
   if(id==='prodModal')initProd();if(id==='poModal')initPo();
   if(id==='purchHistModal')renderHist();
 }
-function hideModal(id){$(id).classList.remove('show');$(id).style.pointerEvents='none'}
+function hideModal(id){
+  $(id).classList.remove('show');$(id).style.pointerEvents='none';
+  resetModal(id);
+}
+function resetModal(id){
+  // 清除所有 input / textarea（不清 disabled 欄位如自動編號）
+  $(id).querySelectorAll('input:not([disabled]),textarea').forEach(el=>{
+    if(el.type==='checkbox'||el.type==='radio'){el.checked=false}
+    else if(el.type==='number'&&el.id&&el.id.includes('qty')){el.value=1}
+    else{el.value=''}
+  });
+  // 清除動態產生的品項列表
+  if(id==='purchModal'){const c=$('pu-items');if(c)c.innerHTML=''}
+  if(id==='saleModal'){const c=$('sa-items');if(c)c.innerHTML=''}
+  if(id==='poModal'){const c=$('po-items');if(c)c.innerHTML=''}
+  // 清除 tag 顯示
+  if(id==='prodModal'){
+    const st=$('pm-style-tags');if(st)st.innerHTML='';
+    const sp=$('pm-sup-tags');if(sp)sp.innerHTML='';
+    D.tempStyles=[];
+  }
+  // 重置金額顯示
+  if(id==='qqModal'){
+    ['qq-price','qq-profit','qq-margin'].forEach(i=>{const e=$(i);if(e)e.textContent=i==='qq-margin'?'0%':'NT 0'});
+  }
+  if(id==='qqPoModal'){
+    const q=$('qqpo-qty');if(q)q.value=1;
+  }
+  if(id==='expModal'){const a=$('ex-amt');if(a)a.value=''}
+}
 
 /* RATE */
 function toggleRatePop(){$('ratePop').classList.toggle('show')}
-function applyRate(){const v=parseFloat($('rateInput').value);if(v>0){D.rate=v;updateRateDisp()}}
+function applyRate(){
+  const v=parseFloat($('rateInput').value);
+  if(!v||v<=0){alert('請輸入有效匯率');return}
+  D.rate=v;updateRateDisp();toggleRatePop();
+  if(window.saveToFirestore)saveToFirestore();
+}
 function updateRateDisp(){$('rateDisp').textContent='¥1 = '+D.rate.toFixed(4)+' NT'}
-function toggleAuto(){
-  D.autoOn=!D.autoOn;$('autoBtn').classList.toggle('btn-gold',D.autoOn);
-  $('autoBtn').textContent=D.autoOn?'自動更新 ON':'自動更新 OFF';
-  if(D.autoOn)startAuto();else clearInterval(D.autoTimer);
-}
-function startAuto(){clearInterval(D.autoTimer);fetchRate();D.autoTimer=setInterval(fetchRate,3600000)}
-async function fetchRate(){
-  try{
-    const r=await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
-    if(r.ok){const d=await r.json();if(d.rates&&d.rates.TWD){D.rate=parseFloat(d.rates.TWD.toFixed(4));updateRateDisp();$('lastUpdate').textContent='匯率更新：'+new Date().toLocaleTimeString('zh-TW')}}
-  }catch(e){console.warn('匯率更新失敗')}
-}
 function setSynced(ok){
   D.synced=ok;
   const dot=$('syncDot');const txt=$('syncTxt');
@@ -1135,9 +1157,8 @@ function updateOverview(){
 }
 
 /* INIT */
-updateRateDisp();$('autoBtn').classList.add('btn-gold');
-if(D.autoOn)startAuto();
+updateRateDisp();
 renderReports();
-// 從 Firestore 載入資料
+// 從 Firestore 載入資料（含匯率）
 setTimeout(()=>{if(window.loadFromFirestore)loadFromFirestore();},800);
 </script>
