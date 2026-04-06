@@ -1,6 +1,6 @@
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;touch-action:pan-x pan-y pinch-zoom}
 :root{
 --bg:#f0ece4;--bg2:#e8e3d8;--bg3:#ddd7cc;
 --card:#faf8f4;--card2:#f4f1ea;
@@ -161,6 +161,113 @@ tr:hover td{background:#faf7f0}
 .ptab.active{color:var(--text);border-bottom-color:var(--gold-active);font-weight:500}
 
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* ===== MOBILE ===== */
+@media (max-width:768px){
+  body{font-size:15px}
+
+  /* --- Sidebar collapsed state (default on mobile) --- */
+  /* When collapsed: show only 1 char via ::before, hide real text */
+  .sb.collapsed .sb-item{
+    padding:0 !important;
+    margin:2px 4px !important;
+    height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0 !important;   /* hide real text */
+    color:transparent;
+    border-radius:6px;
+  }
+  .sb.collapsed .sb-item::before{
+    content:attr(data-short);
+    font-size:17px;
+    color:var(--text3);
+    font-weight:500;
+  }
+  .sb.collapsed .sb-item.active::before{color:var(--text)}
+  .sb.collapsed .sb-item:hover::before{color:var(--text)}
+  .sb.collapsed .sb-item.active{
+    background:var(--gold-bg);
+    margin:2px 4px !important;
+  }
+
+  /* Sidebar expanded: normal display, but bigger touch targets */
+  .sb-item{padding:12px 18px;font-size:15px}
+  .sb-item.active{padding:12px 10px}
+  .sb-toggle{font-size:20px;padding:10px 14px}
+  .sb-title{font-size:15px;padding-top:14px}
+  .sb-excel{font-size:14px;padding:12px 18px}
+  .sb-footer{padding:14px}
+  .sb-sync{font-size:14px}
+  .sb-rate-label{font-size:13px}
+  .sb-rate{font-size:14px}
+
+  /* --- Main area --- */
+  .topbar{padding:14px 14px 0}
+  .page-title{font-size:20px}
+  .topbar-btns .btn{padding:9px 14px;font-size:14px;min-height:40px}
+  .content{padding:12px 10px}
+
+  /* --- Date filter --- */
+  .date-filter{padding:10px 12px;gap:8px}
+  .df-label{font-size:14px}
+  .df-input{padding:8px 10px;font-size:14px;min-height:42px}
+  .df-sep{font-size:14px}
+  .chip{padding:8px 14px;font-size:13px;min-height:36px}
+
+  /* --- Stat cards: 2 per row --- */
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .stat-label{font-size:13px}
+  .stat-val{font-size:22px}
+  .stat-sub{font-size:12px}
+
+  /* --- Section headers --- */
+  .sec-title{font-size:15px}
+  .sec-header{padding:12px 14px}
+  .sec-body{padding:12px 14px}
+
+  /* --- Tables --- */
+  table{font-size:13px}
+  th{padding:10px 10px;font-size:13px}
+  td{padding:12px 10px;font-size:13px}
+
+  /* --- Buttons --- */
+  .btn{padding:9px 16px;font-size:14px;min-height:40px}
+  .btn-sm{padding:8px 14px;font-size:13px;min-height:36px}
+  .btn-ghost{font-size:14px;padding:6px 8px}
+  .badge{padding:4px 12px;font-size:13px}
+
+  /* --- Forms --- */
+  .form-grid{grid-template-columns:1fr}
+  .form-grid3{grid-template-columns:1fr}
+  .field label{font-size:13px}
+  .field input,.field select{padding:10px 12px;font-size:15px;min-height:44px}
+
+  /* --- Modal: slide up from bottom --- */
+  .overlay{align-items:flex-end !important}
+  .modal{
+    border-radius:20px 20px 0 0 !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:16px 16px 36px;
+    max-height:85vh;
+  }
+  .modal-title{font-size:16px}
+
+  /* --- Misc --- */
+  .two-col{grid-template-columns:1fr}
+  .sum-row{grid-template-columns:1fr 1fr}
+  .sum-label{font-size:12px}
+  .sum-val{font-size:17px}
+  .ptab{padding:10px 14px;font-size:14px}
+  .po-row{padding:10px 0;font-size:14px}
+  .inv-name{font-size:16px}
+  .inv-meta{font-size:13px}
+  .inv-tag{padding:4px 12px;font-size:13px}
+  .notice-warn{font-size:13px;padding:10px 12px}
+  .rate-pop{left:56px !important;bottom:60px;width:calc(100vw - 66px);max-width:300px}
+}
 </style>
 
 <div class="layout" id="app">
@@ -170,12 +277,12 @@ tr:hover td{background:#faf7f0}
   <button class="sb-toggle" onclick="toggleSidebar()" title="收合選單">‹</button>
   <div class="sb-title">代購帳 <span class="sb-ver">v1</span></div>
   <div class="sb-nav" id="sbNav">
-    <div class="sb-item active" data-page="6" onclick="goto(6,this)">報表</div>
-    <div class="sb-item" data-page="2" onclick="goto(2,this)">商品管理</div>
-    <div class="sb-item" data-page="1" onclick="goto(1,this)">庫存管理</div>
-    <div class="sb-item" data-page="4" onclick="goto(4,this)">進貨紀錄</div>
-    <div class="sb-item" data-page="5" onclick="goto(5,this)">銷售紀錄</div>
-    <div class="sb-item" data-page="7" onclick="goto(7,this)">快速訂價</div>
+    <div class="sb-item active" data-page="6" data-short="報" onclick="goto(6,this)">報表</div>
+    <div class="sb-item" data-page="2" data-short="商" onclick="goto(2,this)">商品管理</div>
+    <div class="sb-item" data-page="1" data-short="庫" onclick="goto(1,this)">庫存管理</div>
+    <div class="sb-item" data-page="4" data-short="進" onclick="goto(4,this)">進貨紀錄</div>
+    <div class="sb-item" data-page="5" data-short="銷" onclick="goto(5,this)">銷售紀錄</div>
+    <div class="sb-item" data-page="7" data-short="快" onclick="goto(7,this)">快速訂價</div>
   </div>
   <div class="sb-excel" onclick="alert('匯出 Excel 功能（Firebase 導入後啟用）')"><span>匯出 Excel</span></div>
   <div class="sb-footer">
@@ -712,6 +819,13 @@ function toggleSidebar(){
   const sb=$('sidebar');sb.classList.toggle('collapsed');
   const btn=sb.querySelector('.sb-toggle');
   btn.textContent=sb.classList.contains('collapsed')?'›':'‹';
+}
+// 手機上預設收合
+if(window.innerWidth<=768){
+  const sb=$('sidebar');
+  sb.classList.add('collapsed');
+  const btn=sb.querySelector('.sb-toggle');
+  if(btn)btn.textContent='›';
 }
 function renderCurrentPage(i){
   if(i===0)renderOverview();if(i===1)renderInventory();if(i===2)renderProducts();
